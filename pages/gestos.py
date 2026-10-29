@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image as Image, ImageOps as ImagOps
 from keras.models import load_model
 
-st.streamlit("Gestos")
+st.title("Gestos")
 
 def on_publish(client,userdata,result):             #create function for callback
     print("el dato ha sido publicado \n")
