@@ -236,7 +236,7 @@ with st.container(border=True):
 
     st.markdown(
         "<p style='text-align:center; color:white; font-weight:bold;'>"
-        "¡Que comience el desafío!"
+        "Elige si quieres jugar con gestos o voz"
         "</p>",
         unsafe_allow_html=True
     )
