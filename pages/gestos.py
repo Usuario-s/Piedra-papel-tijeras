@@ -31,6 +31,12 @@ client1.on_publish = on_publish
 client1.connect(broker,port)
 
 model = load_model('converted_kerasPPT/keras_model.h5')
+
+with open('converted_kerasPPT/labels.txt', 'r') as f:
+    clases = [line.strip().split(' ', 1)[1] for line in f.readlines()]
+
+print(clases)
+
 data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
 st.title("Cerradura Inteligente")
