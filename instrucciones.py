@@ -1,97 +1,182 @@
 
+
 import streamlit as st
 
-# ==========================================
-# CONFIGURACIÓN DE LA PÁGINA
-# ==========================================
-
 st.set_page_config(
-    page_title="Instrucciones - Piedra, Papel o Tijera",
+    page_title="Piedra, Papel o Tijera | Instrucciones",
     page_icon="✊",
     layout="centered"
 )
 
 # ==========================================
-# DISEÑO CSS
+# ESTILOS CSS
 # ==========================================
 
 st.markdown("""
 <style>
 
-/* Fondo general */
 .stApp {
-    background: linear-gradient(135deg, #050505, #111111, #080808);
-    color: white;
+    background: linear-gradient(145deg, #080808 0%, #141414 55%, #090909 100%);
+    color: #FFFFFF;
 }
 
-/* Ocultar menú y footer */
-#MainMenu {
+header[data-testid="stHeader"] {
+    background: transparent;
+}
+
+#MainMenu, footer {
     visibility: hidden;
 }
 
-footer {
-    visibility: hidden;
+/* Contenedor principal */
+.block-container {
+    max-width: 850px;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
 }
 
 /* Título principal */
 .main-title {
-    text-align: center;
     color: #FFFFFF;
-    font-size: 42px;
+    text-align: center;
+    font-size: 40px;
     font-weight: 900;
-    margin-bottom: 5px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
 }
 
-/* Subtítulo */
 .subtitle {
+    color: #999999;
     text-align: center;
-    color: #AAAAAA;
     font-size: 16px;
     margin-bottom: 35px;
 }
 
-/* Títulos de sección */
+/* Separador */
+.separator {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #505050, transparent);
+    margin: 25px 0;
+}
+
+/* Títulos */
 .section-title {
     color: #FFFFFF;
     font-size: 23px;
-    font-weight: 900;
-    margin-top: 25px;
+    font-weight: 850;
     margin-bottom: 15px;
+    margin-top: 25px;
 }
 
 /* Tarjetas */
-.instruction-card {
-    background: #181818;
-    border: 1px solid #333333;
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 15px;
+.card {
+    background: linear-gradient(135deg, #202020, #181818);
+    border: 1px solid #353535;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.20);
 }
 
-/* Texto de tarjetas */
+/* Texto */
 .card-text {
-    color: #E5E5E5;
-    font-size: 16px;
-    line-height: 1.7;
-}
-
-/* Nombres de jugadas */
-.move-title {
-    color: #FFFFFF;
-    font-size: 20px;
-    font-weight: 900;
-    margin-bottom: 8px;
-}
-
-/* Separador */
-hr {
-    border-color: #333333;
+    color: #D0D0D0;
+    font-size: 15px;
+    line-height: 1.8;
 }
 
 /* Texto destacado */
-.highlight {
+.card-text strong {
     color: #FFFFFF;
     font-weight: 800;
+}
+
+/* Títulos de jugadas */
+.move-title {
+    color: #FFFFFF;
+    font-size: 19px;
+    font-weight: 850;
+    margin-bottom: 8px;
+}
+
+/* Iconos */
+.move-icon {
+    font-size: 27px;
+    margin-right: 8px;
+}
+
+/* Pasos */
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 17px;
+}
+
+.step:last-child {
+    margin-bottom: 0;
+}
+
+.step-number {
+    background: #353535;
+    border: 1px solid #505050;
+    color: #FFFFFF;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.step-description {
+    color: #D0D0D0;
+    font-size: 15px;
+    line-height: 1.7;
+    padding-top: 3px;
+}
+
+/* Resultados */
+.result-row {
+    padding: 12px 0;
+    border-bottom: 1px solid #353535;
+    color: #D0D0D0;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.result-row:last-child {
+    border-bottom: none;
+}
+
+.result-row strong {
+    color: #FFFFFF;
+    font-weight: 800;
+}
+
+/* Pie de página */
+.final-message {
+    text-align: center;
+    padding: 25px 15px;
+    background: linear-gradient(135deg, #242424, #171717);
+    border: 1px solid #393939;
+    border-radius: 15px;
+    margin-top: 25px;
+}
+
+.final-title {
+    color: #FFFFFF;
+    font-size: 23px;
+    font-weight: 900;
+    margin-bottom: 10px;
+}
+
+.final-text {
+    color: #AAAAAA;
+    font-size: 14px;
+    line-height: 1.7;
 }
 
 </style>
@@ -99,7 +184,7 @@ hr {
 
 
 # ==========================================
-# CONTENIDO
+# ENCABEZADO
 # ==========================================
 
 st.markdown("""
@@ -108,115 +193,159 @@ st.markdown("""
 </div>
 
 <div class="subtitle">
-    Aprende las reglas y prepárate para desafiar a la computadora.
+    Instrucciones del juego · Jugador vs Computadora
 </div>
+
+<div class="separator"></div>
 """, unsafe_allow_html=True)
 
 
+# ==========================================
 # OBJETIVO
+# ==========================================
+
 st.markdown("""
 <div class="section-title">🎯 Objetivo del juego</div>
 
-<div class="instruction-card">
+<div class="card">
     <div class="card-text">
-        El objetivo es competir contra la computadora y conseguir
-        la mayor cantidad de victorias posibles. En cada ronda,
-        ambos deberán elegir entre piedra, papel o tijera.
+        Compite contra la computadora y consigue la mayor cantidad
+        de victorias posibles. En cada ronda, ambos deberán elegir
+        entre piedra, papel o tijera. ¡Demuestra quién tiene la mejor estrategia!
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 
+# ==========================================
 # REGLAS
-st.markdown("""
-<div class="section-title">📖 ¿Cómo se juega?</div>
+# ==========================================
 
-<div class="instruction-card">
+st.markdown("""
+<div class="section-title">📖 Las reglas</div>
+
+<div class="card">
     <div class="move-title">✊ Piedra</div>
     <div class="card-text">
-        La piedra vence a la tijera porque la rompe,
-        pero pierde contra el papel porque este la envuelve.
+        Vence a la tijera porque la rompe, pero pierde contra el papel
+        porque este la envuelve.
     </div>
 </div>
 
-<div class="instruction-card">
+<div class="card">
     <div class="move-title">✋ Papel</div>
     <div class="card-text">
-        El papel vence a la piedra porque la envuelve,
-        pero pierde contra la tijera porque esta lo corta.
+        Vence a la piedra porque la envuelve, pero pierde contra la tijera
+        porque esta lo corta.
     </div>
 </div>
 
-<div class="instruction-card">
+<div class="card">
     <div class="move-title">✌️ Tijera</div>
     <div class="card-text">
-        La tijera vence al papel porque lo corta,
-        pero pierde contra la piedra porque esta la rompe.
+        Vence al papel porque lo corta, pero pierde contra la piedra
+        porque esta la rompe.
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 
-# DINÁMICA
+# ==========================================
+# DINÁMICA DEL JUEGO
+# ==========================================
+
 st.markdown("""
-<div class="section-title">⚡ Dinámica de cada ronda</div>
+<div class="section-title">⚡ ¿Cómo jugar?</div>
 
-<div class="instruction-card">
-    <div class="card-text">
-        <b>1.</b> Selecciona una de las tres opciones: piedra, papel o tijera.<br><br>
+<div class="card">
 
-        <b>2.</b> La computadora elegirá automáticamente una opción al azar.<br><br>
-
-        <b>3.</b> El juego comparará ambas elecciones y determinará quién gana.<br><br>
-
-        <b>4.</b> El resultado aparecerá en pantalla y se actualizará el marcador.
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-description">
+            <strong>Selecciona tu jugada.</strong><br>
+            Elige entre piedra, papel o tijera.
+        </div>
     </div>
+
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-description">
+            <strong>Turno de la computadora.</strong><br>
+            La máquina elegirá automáticamente una opción al azar.
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-description">
+            <strong>Comparación de jugadas.</strong><br>
+            El sistema comparará ambas elecciones para determinar el resultado.
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-description">
+            <strong>Resultado de la ronda.</strong><br>
+            Descubre quién ganó y consulta la actualización del marcador.
+        </div>
+    </div>
+
 </div>
 """, unsafe_allow_html=True)
 
 
-# CONDICIONES
+# ==========================================
+# RESULTADOS
+# ==========================================
+
 st.markdown("""
-<div class="section-title">🏆 ¿Cómo se determina el ganador?</div>
+<div class="section-title">🏆 Resultados de cada ronda</div>
 
-<div class="instruction-card">
-    <div class="card-text">
-        <b>Victoria:</b> Si tu elección vence a la de la computadora,
-        ganas un punto.<br><br>
+<div class="card">
 
-        <b>Derrota:</b> Si la computadora elige una opción que vence a la tuya,
-        ella gana la ronda.<br><br>
-
-        <b>Empate:</b> Si ambos seleccionan la misma opción,
-        ninguno obtiene puntos.
+    <div class="result-row">
+        <strong>VICTORIA</strong><br>
+        Si tu elección vence a la de la computadora, ganas un punto.
     </div>
+
+    <div class="result-row">
+        <strong>DERROTA</strong><br>
+        Si la computadora elige una opción que vence a la tuya,
+        ella gana la ronda.
+    </div>
+
+    <div class="result-row">
+        <strong>EMPATE</strong><br>
+        Si ambos seleccionan la misma opción, ninguno obtiene puntos.
+    </div>
+
 </div>
 """, unsafe_allow_html=True)
 
 
-# CONSEJO FINAL
-st.markdown("""
-<hr>
+# ==========================================
+# MENSAJE FINAL
+# ==========================================
 
-<div style="
-    text-align: center;
-    padding: 20px;
-">
-    <div style="
-        color: white;
-        font-size: 23px;
-        font-weight: 900;
-        margin-bottom: 10px;
-    ">
+st.markdown("""
+<div class="separator"></div>
+
+<div class="final-message">
+
+    <div class="final-title">
         ¿Estás listo para jugar?
     </div>
 
-    <div style="
-        color: #AAAAAA;
-        font-size: 15px;
-    ">
-        ¡Elige tu jugada, vence a la computadora y demuestra
-        quién es el verdadero campeón!
+    <div class="final-text">
+        Elige tu jugada, supera a la computadora y demuestra
+        quién es el verdadero campeón.
+        <br><br>
+        <strong style="color: #FFFFFF;">
+            ¡Que comience el desafío!
+        </strong>
     </div>
+
 </div>
 """, unsafe_allow_html=True)
+
