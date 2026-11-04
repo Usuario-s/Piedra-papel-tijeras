@@ -1,182 +1,84 @@
 
-
 import streamlit as st
 
 st.set_page_config(
-    page_title="Piedra, Papel o Tijera | Instrucciones",
+    page_title="Piedra, Papel o Tijera",
     page_icon="✊",
     layout="centered"
 )
 
 # ==========================================
-# ESTILOS CSS
+# DISEÑO GENERAL
 # ==========================================
 
 st.markdown("""
 <style>
 
+/* Fondo */
 .stApp {
-    background: linear-gradient(145deg, #080808 0%, #141414 55%, #090909 100%);
+    background: linear-gradient(135deg, #080808, #151515, #090909);
     color: #FFFFFF;
 }
 
-header[data-testid="stHeader"] {
-    background: transparent;
-}
-
-#MainMenu, footer {
-    visibility: hidden;
-}
-
-/* Contenedor principal */
+/* Contenedor */
 .block-container {
     max-width: 850px;
     padding-top: 3rem;
     padding-bottom: 3rem;
 }
 
+/* Ocultar elementos */
+#MainMenu, footer {
+    visibility: hidden;
+}
+
+/* Textos generales */
+.stMarkdown, .stMarkdown p {
+    color: #D0D0D0;
+}
+
 /* Título principal */
-.main-title {
-    color: #FFFFFF;
+h1 {
+    color: #FFFFFF !important;
+    font-size: 38px !important;
+    font-weight: 900 !important;
     text-align: center;
-    font-size: 40px;
-    font-weight: 900;
     letter-spacing: 1px;
-    margin-bottom: 8px;
 }
 
-.subtitle {
-    color: #999999;
-    text-align: center;
-    font-size: 16px;
-    margin-bottom: 35px;
+/* Subtítulos */
+h2, h3 {
+    color: #FFFFFF !important;
+    font-weight: 850 !important;
 }
 
-/* Separador */
-.separator {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #505050, transparent);
-    margin: 25px 0;
+/* Separadores */
+hr {
+    border-color: #393939;
 }
 
-/* Títulos */
-.section-title {
-    color: #FFFFFF;
-    font-size: 23px;
-    font-weight: 850;
-    margin-bottom: 15px;
-    margin-top: 25px;
-}
-
-/* Tarjetas */
-.card {
-    background: linear-gradient(135deg, #202020, #181818);
-    border: 1px solid #353535;
+/* Contenedores de tarjetas */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: linear-gradient(145deg, #222222, #181818);
+    border: 1px solid #383838;
     border-radius: 14px;
-    padding: 22px 24px;
-    margin-bottom: 14px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.20);
+    padding: 15px;
 }
 
 /* Texto */
-.card-text {
-    color: #D0D0D0;
-    font-size: 15px;
+p {
     line-height: 1.8;
 }
 
-/* Texto destacado */
-.card-text strong {
-    color: #FFFFFF;
-    font-weight: 800;
-}
-
-/* Títulos de jugadas */
-.move-title {
-    color: #FFFFFF;
-    font-size: 19px;
-    font-weight: 850;
-    margin-bottom: 8px;
-}
-
-/* Iconos */
-.move-icon {
-    font-size: 27px;
-    margin-right: 8px;
-}
-
-/* Pasos */
-.step {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
-    margin-bottom: 17px;
-}
-
-.step:last-child {
-    margin-bottom: 0;
-}
-
-.step-number {
-    background: #353535;
-    border: 1px solid #505050;
-    color: #FFFFFF;
-    min-width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: 800;
-    font-size: 14px;
-}
-
-.step-description {
-    color: #D0D0D0;
-    font-size: 15px;
-    line-height: 1.7;
-    padding-top: 3px;
-}
-
-/* Resultados */
-.result-row {
-    padding: 12px 0;
-    border-bottom: 1px solid #353535;
-    color: #D0D0D0;
-    font-size: 15px;
-    line-height: 1.7;
-}
-
-.result-row:last-child {
-    border-bottom: none;
-}
-
-.result-row strong {
-    color: #FFFFFF;
-    font-weight: 800;
-}
-
-/* Pie de página */
-.final-message {
+/* Texto secundario */
+.caption {
+    color: #999999;
     text-align: center;
-    padding: 25px 15px;
-    background: linear-gradient(135deg, #242424, #171717);
-    border: 1px solid #393939;
-    border-radius: 15px;
-    margin-top: 25px;
 }
 
-.final-title {
-    color: #FFFFFF;
-    font-size: 23px;
-    font-weight: 900;
-    margin-bottom: 10px;
-}
-
-.final-text {
-    color: #AAAAAA;
-    font-size: 14px;
-    line-height: 1.7;
+/* Espaciado */
+div[data-testid="stMarkdownContainer"] {
+    color: #D0D0D0;
 }
 
 </style>
@@ -187,165 +89,156 @@ header[data-testid="stHeader"] {
 # ENCABEZADO
 # ==========================================
 
-st.markdown("""
-<div class="main-title">
-    ✊ PIEDRA, PAPEL O TIJERA
-</div>
+st.title("✊ PIEDRA, PAPEL O TIJERA")
 
-<div class="subtitle">
-    Instrucciones del juego · Jugador vs Computadora
-</div>
+st.markdown(
+    "<p style='text-align:center; color:#999999;'>"
+    "INSTRUCCIONES DEL JUEGO · JUGADOR VS COMPUTADORA"
+    "</p>",
+    unsafe_allow_html=True
+)
 
-<div class="separator"></div>
-""", unsafe_allow_html=True)
+st.divider()
 
 
 # ==========================================
 # OBJETIVO
 # ==========================================
 
-st.markdown("""
-<div class="section-title">🎯 Objetivo del juego</div>
+st.subheader("🎯 Objetivo del juego")
 
-<div class="card">
-    <div class="card-text">
-        Compite contra la computadora y consigue la mayor cantidad
-        de victorias posibles. En cada ronda, ambos deberán elegir
-        entre piedra, papel o tijera. ¡Demuestra quién tiene la mejor estrategia!
-    </div>
-</div>
-""", unsafe_allow_html=True)
+with st.container(border=True):
+    st.write(
+        "Compite contra la computadora y consigue la mayor cantidad "
+        "de victorias posibles. En cada ronda, ambos deberán elegir "
+        "entre piedra, papel o tijera."
+    )
+
+st.write("")
 
 
 # ==========================================
 # REGLAS
 # ==========================================
 
-st.markdown("""
-<div class="section-title">📖 Las reglas</div>
+st.subheader("📖 Las reglas")
 
-<div class="card">
-    <div class="move-title">✊ Piedra</div>
-    <div class="card-text">
-        Vence a la tijera porque la rompe, pero pierde contra el papel
-        porque este la envuelve.
-    </div>
-</div>
+with st.container(border=True):
+    st.markdown("### ✊ Piedra")
+    st.write(
+        "Vence a la tijera porque la rompe, pero pierde contra "
+        "el papel porque este la envuelve."
+    )
 
-<div class="card">
-    <div class="move-title">✋ Papel</div>
-    <div class="card-text">
-        Vence a la piedra porque la envuelve, pero pierde contra la tijera
-        porque esta lo corta.
-    </div>
-</div>
+with st.container(border=True):
+    st.markdown("### ✋ Papel")
+    st.write(
+        "Vence a la piedra porque la envuelve, pero pierde contra "
+        "la tijera porque esta lo corta."
+    )
 
-<div class="card">
-    <div class="move-title">✌️ Tijera</div>
-    <div class="card-text">
-        Vence al papel porque lo corta, pero pierde contra la piedra
-        porque esta la rompe.
-    </div>
-</div>
-""", unsafe_allow_html=True)
+with st.container(border=True):
+    st.markdown("### ✌️ Tijera")
+    st.write(
+        "Vence al papel porque lo corta, pero pierde contra "
+        "la piedra porque esta la rompe."
+    )
+
+st.write("")
 
 
 # ==========================================
 # DINÁMICA DEL JUEGO
 # ==========================================
 
-st.markdown("""
-<div class="section-title">⚡ ¿Cómo jugar?</div>
+st.subheader("⚡ ¿Cómo jugar?")
 
-<div class="card">
+with st.container(border=True):
 
-    <div class="step">
-        <div class="step-number">1</div>
-        <div class="step-description">
-            <strong>Selecciona tu jugada.</strong><br>
-            Elige entre piedra, papel o tijera.
-        </div>
-    </div>
+    st.markdown("**01 — Selecciona tu jugada**")
+    st.write("Elige entre piedra, papel o tijera.")
 
-    <div class="step">
-        <div class="step-number">2</div>
-        <div class="step-description">
-            <strong>Turno de la computadora.</strong><br>
-            La máquina elegirá automáticamente una opción al azar.
-        </div>
-    </div>
+    st.divider()
 
-    <div class="step">
-        <div class="step-number">3</div>
-        <div class="step-description">
-            <strong>Comparación de jugadas.</strong><br>
-            El sistema comparará ambas elecciones para determinar el resultado.
-        </div>
-    </div>
+    st.markdown("**02 — Turno de la computadora**")
+    st.write("La máquina elegirá automáticamente una opción al azar.")
 
-    <div class="step">
-        <div class="step-number">4</div>
-        <div class="step-description">
-            <strong>Resultado de la ronda.</strong><br>
-            Descubre quién ganó y consulta la actualización del marcador.
-        </div>
-    </div>
+    st.divider()
 
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("**03 — Comparación de jugadas**")
+    st.write(
+        "El sistema comparará ambas elecciones para determinar "
+        "el resultado de la ronda."
+    )
+
+    st.divider()
+
+    st.markdown("**04 — Resultado**")
+    st.write(
+        "Descubre quién ganó y consulta la actualización del marcador."
+    )
+
+st.write("")
 
 
 # ==========================================
 # RESULTADOS
 # ==========================================
 
-st.markdown("""
-<div class="section-title">🏆 Resultados de cada ronda</div>
+st.subheader("🏆 Resultados de cada ronda")
 
-<div class="card">
+with st.container(border=True):
 
-    <div class="result-row">
-        <strong>VICTORIA</strong><br>
-        Si tu elección vence a la de la computadora, ganas un punto.
-    </div>
+    st.markdown("**<span style='color:#FFFFFF;'>VICTORIA</span>**", unsafe_allow_html=True)
+    st.write(
+        "Si tu elección vence a la de la computadora, ganas un punto."
+    )
 
-    <div class="result-row">
-        <strong>DERROTA</strong><br>
-        Si la computadora elige una opción que vence a la tuya,
-        ella gana la ronda.
-    </div>
+    st.divider()
 
-    <div class="result-row">
-        <strong>EMPATE</strong><br>
-        Si ambos seleccionan la misma opción, ninguno obtiene puntos.
-    </div>
+    st.markdown("**DERROTA**")
+    st.write(
+        "Si la computadora elige una opción que vence a la tuya, "
+        "ella gana la ronda."
+    )
 
-</div>
-""", unsafe_allow_html=True)
+    st.divider()
+
+    st.markdown("**EMPATE**")
+    st.write(
+        "Si ambos seleccionan la misma opción, ninguno obtiene puntos."
+    )
+
+st.write("")
+st.divider()
 
 
 # ==========================================
 # MENSAJE FINAL
 # ==========================================
 
-st.markdown("""
-<div class="separator"></div>
+with st.container(border=True):
 
-<div class="final-message">
+    st.markdown(
+        "<h3 style='text-align:center; color:white;'>"
+        "¿Estás listo para jugar?"
+        "</h3>",
+        unsafe_allow_html=True
+    )
 
-    <div class="final-title">
-        ¿Estás listo para jugar?
-    </div>
+    st.markdown(
+        "<p style='text-align:center; color:#AAAAAA;'>"
+        "Elige tu jugada, supera a la computadora y demuestra "
+        "quién es el verdadero campeón."
+        "</p>",
+        unsafe_allow_html=True
+    )
 
-    <div class="final-text">
-        Elige tu jugada, supera a la computadora y demuestra
-        quién es el verdadero campeón.
-        <br><br>
-        <strong style="color: #FFFFFF;">
-            ¡Que comience el desafío!
-        </strong>
-    </div>
+    st.markdown(
+        "<p style='text-align:center; color:white; font-weight:bold;'>"
+        "¡Que comience el desafío!"
+        "</p>",
+        unsafe_allow_html=True
+    )
 
-</div>
-""", unsafe_allow_html=True)
 
