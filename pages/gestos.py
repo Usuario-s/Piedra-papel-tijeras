@@ -1,3 +1,4 @@
+
 import paho.mqtt.client as paho
 import time
 import json
@@ -20,8 +21,6 @@ def on_message(client, userdata, message):
     message_received=str(message.payload.decode("utf-8"))
     st.write(message_received)
 
-        
-
 
 broker="broker.mqttdashboard.com"
 port=1883
@@ -30,7 +29,23 @@ client1.on_message = on_message
 client1.on_publish = on_publish
 client1.connect(broker,port)
 
+# Iniciar comunicación MQTT
+client1.loop_start()
+
+# ==========================================
+# CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
+# ==========================================
+
 model = load_model('converted_kerasPPT/keras_model.h5')
+
+# Cargar las etiquetas del modelo
+with open('converted_kerasPPT/labels.txt', 'r') as f:
+    clases = [
+        linea.strip().split(maxsplit=1)[1]
+        for linea in f.readlines()
+        if linea.strip()
+    ]
+
 data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
 st.title("Cerradura Inteligente")
@@ -40,27 +55,70 @@ img_file_buffer = st.camera_input("Toma una Foto")
 if img_file_buffer is not None:
     # To read image file buffer with OpenCV:
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+
    #To read image file buffer as a PIL Image:
-    img = Image.open(img_file_buffer)
+    img = Image.open(img_file_buffer).convert("RGB")
 
     newsize = (224, 224)
     img = img.resize(newsize)
+
     # To convert PIL Image to numpy array:
     img_array = np.array(img)
 
     # Normalize the image
-    normalized_image_array = (img_array.astype(np.float32) / 127.0) - 1
+    normalized_image_array = (img_array.astype(np.float32) / 127.5) - 1
+
     # Load the image into the array
     data[0] = normalized_image_array
 
     # run the inference
-    prediction = model.predict(data)
+    prediction = model.predict(data, verbose=0)
     print(prediction)
-    if prediction[0][0]>0.3:
-      st.header('Abriendo')
-      client1.publish("tripletadeo","{'gesto': 'Abre'}",qos=0, retain=False)
-      time.sleep(0.2)
-    if prediction[0][1]>0.3:
-      st.header('Cerrando')
-      client1.publish("tripletadeo","{'gesto': 'Cierra'}",qos=0, retain=False)
-      time.sleep(0.2)  
+
+    # ==========================================
+    # IDENTIFICAR EL GESTO
+    # ==========================================
+
+    if len(clases) != 3:
+        st.error("El modelo no contiene exactamente tres clases.")
+
+    else:
+
+        # Obtener la clase con mayor probabilidad
+        indice = np.argmax(prediction[0])
+
+        # Obtener el nivel de confianza
+        confianza = prediction[0][indice]
+
+        # Identificar el gesto
+        gesto = clases[indice]
+
+        if confianza > 0.3:
+
+            st.header(gesto)
+
+            st.write(
+                "Confianza: {:.2f}%".format(confianza * 100)
+            )
+
+            # ==========================================
+            # ENVIAR GESTO A WOKWI MEDIANTE MQTT
+            # ==========================================
+
+            mensaje = {
+                "gesto": gesto
+            }
+
+            client1.publish(
+                "tripletadeo",
+                json.dumps(mensaje),
+                qos=0,
+                retain=False
+            )
+
+            time.sleep(0.2)
+
+        else:
+
+            st.warning("No se pudo reconocer el gesto. Intenta nuevamente.")
+
