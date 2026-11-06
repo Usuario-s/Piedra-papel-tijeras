@@ -36,7 +36,7 @@ client1.loop_start()
 # CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
 # ==========================================
 
-model = load_model('converted_kerasPPT/keras_model.h5')
+model = load_model('converted_kerasPTP/keras_model.h5')
 
 # Cargar las etiquetas del modelo
 with open('converted_kerasPPT/labels.txt', 'r') as f:
