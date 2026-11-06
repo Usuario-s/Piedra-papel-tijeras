@@ -1,3 +1,4 @@
+
 keras
 streamlit
 streamlit-webrtc
@@ -7,3 +8,10 @@ Pillow
 tensorflow==2.12.0
 paho-mqtt==1.6.1
 
+# Librerías para reconocimiento de voz
+bokeh==2.4.3
+streamlit-bokeh-events==0.1.2
+
+# Librerías adicionales de voz y traducción
+gTTS
+googletrans==4.0.0-rc1
