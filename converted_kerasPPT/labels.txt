@@ -1,3 +1,0 @@
-0 Papel
-1 Piedra
-2 Tijeras
