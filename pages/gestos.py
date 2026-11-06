@@ -1,5 +1,4 @@
 
-
 import paho.mqtt.client as paho
 import time
 import json
@@ -160,7 +159,7 @@ if img_file_buffer is not None:
 
                 st.info("🤝 ¡EMPATE! Ambos eligieron " + gesto)
 
-            elif reglas.get(jugador_normalizado) == maquina_normalizado:
+            elif reglas.get(jugador_normalizado) == maquina_normalizada:
 
                 st.success("🎉 ¡GANASTE! Tu " + gesto + " vence a " + maquina)
 
