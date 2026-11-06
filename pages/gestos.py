@@ -1,5 +1,4 @@
 
-
 import paho.mqtt.client as paho
 import time
 import json
@@ -139,6 +138,24 @@ if img_file_buffer is not None:
             jugador_normalizado = gesto.strip().lower()
             maquina_normalizada = maquina.strip().lower()
 
+            # Unificar los nombres de los gestos
+            equivalencias = {
+                "tijeras": "tijera",
+                "tijera": "tijera",
+                "piedra": "piedra",
+                "papel": "papel"
+            }
+
+            jugador_normalizado = equivalencias.get(
+                jugador_normalizado,
+                jugador_normalizado
+            )
+
+            maquina_normalizada = equivalencias.get(
+                maquina_normalizado,
+                maquina_normalizado
+            )
+
             # Reglas: gesto que vence al otro
             reglas = {
                 "piedra": "tijera",
@@ -156,7 +173,7 @@ if img_file_buffer is not None:
 
                 st.info("🤝 ¡EMPATE! Ambos eligieron " + gesto)
 
-            elif reglas.get(jugador_normalizado) == maquina_normalizada:
+            elif reglas.get(jugador_normalizado) == maquina_normalizado:
 
                 st.success("🎉 ¡GANASTE! Tu " + gesto + " vence a " + maquina)
 
@@ -171,3 +188,4 @@ if img_file_buffer is not None:
         else:
 
             st.warning("No se pudo reconocer el gesto. Intenta nuevamente.")
+
