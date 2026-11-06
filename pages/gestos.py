@@ -6,38 +6,52 @@ import random
 import streamlit as st
 import cv2
 import numpy as np
+
 #from PIL import Image
 from PIL import Image as Image, ImageOps as ImagOps
 from keras.models import load_model
 
 st.title("Gestos")
 
-def on_publish(client,userdata,result):             #create function for callback
+
+# ==========================================
+# FUNCIONES MQTT
+# ==========================================
+
+def on_publish(client, userdata, result):
     print("el dato ha sido publicado \n")
     pass
+
 
 def on_message(client, userdata, message):
     global message_received
     time.sleep(2)
-    message_received=str(message.payload.decode("utf-8"))
+    message_received = str(message.payload.decode("utf-8"))
     st.write(message_received)
 
 
-broker="broker.mqttdashboard.com"
-port=1883
-client1= paho.Client("APP_CERR")
+# ==========================================
+# CONFIGURACIÓN MQTT
+# ==========================================
+
+broker = "broker.mqttdashboard.com"
+port = 1883
+
+client1 = paho.Client("APP_CERR")
 client1.on_message = on_message
 client1.on_publish = on_publish
-client1.connect(broker,port)
+client1.connect(broker, port)
 
 # Iniciar comunicación MQTT
 client1.loop_start()
+
 
 # ==========================================
 # CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
 # ==========================================
 
 model = load_model('converted_kerasPTP/keras_model.h5')
+
 
 # Cargar las etiquetas del modelo
 with open('converted_kerasPTP/labels.txt', 'r') as f:
@@ -47,17 +61,20 @@ with open('converted_kerasPTP/labels.txt', 'r') as f:
         if linea.strip()
     ]
 
+
 data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
 st.title("Cerradura Inteligente")
 
 img_file_buffer = st.camera_input("Toma una Foto")
 
+
 if img_file_buffer is not None:
+
     # To read image file buffer with OpenCV:
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
-   #To read image file buffer as a PIL Image:
+    # To read image file buffer as a PIL Image:
     img = Image.open(img_file_buffer).convert("RGB")
 
     newsize = (224, 224)
@@ -72,15 +89,17 @@ if img_file_buffer is not None:
     # Load the image into the array
     data[0] = normalized_image_array
 
-    # run the inference
+    # Run the inference
     prediction = model.predict(data, verbose=0)
     print(prediction)
+
 
     # ==========================================
     # IDENTIFICAR EL GESTO
     # ==========================================
 
     if len(clases) != 3:
+
         st.error("El modelo no contiene exactamente tres clases.")
 
     else:
@@ -94,6 +113,7 @@ if img_file_buffer is not None:
         # Identificar el gesto
         gesto = clases[indice]
 
+
         if confianza > 0.3:
 
             st.header(gesto)
@@ -101,6 +121,7 @@ if img_file_buffer is not None:
             st.write(
                 "Confianza: {:.2f}%".format(confianza * 100)
             )
+
 
             # ==========================================
             # ENVIAR GESTO DEL JUGADOR POR MQTT
@@ -119,6 +140,7 @@ if img_file_buffer is not None:
 
             time.sleep(0.2)
 
+
             # ==========================================
             # ELECCIÓN ALEATORIA DE LA COMPUTADORA
             # ==========================================
@@ -131,14 +153,15 @@ if img_file_buffer is not None:
 
             st.header(maquina)
 
+
             # ==========================================
-            # COMPARAR LAS JUGADAS
+            # NORMALIZAR LOS NOMBRES DE LOS GESTOS
             # ==========================================
 
             jugador_normalizado = gesto.strip().lower()
             maquina_normalizada = maquina.strip().lower()
 
-            # Unificar los nombres de los gestos
+            # Unificar Tijera y Tijeras
             equivalencias = {
                 "tijeras": "tijera",
                 "tijera": "tijera",
@@ -147,21 +170,28 @@ if img_file_buffer is not None:
             }
 
             jugador_normalizado = equivalencias.get(
-                jugador_normalizado,
-                jugador_normalizado
+                jugador_normalizado, jugador_normalizado
             )
 
             maquina_normalizada = equivalencias.get(
-                maquina_normalizado,
-                maquina_normalizado
+                maquina_normalizada, maquina_normalizada
             )
 
-            # Reglas: gesto que vence al otro
+
+            # ==========================================
+            # REGLAS DEL JUEGO
+            # ==========================================
+
+            # Piedra vence a Tijera
+            # Tijera vence a Papel
+            # Papel vence a Piedra
+
             reglas = {
                 "piedra": "tijera",
                 "tijera": "papel",
                 "papel": "piedra"
             }
+
 
             # ==========================================
             # DETERMINAR GANADOR
@@ -169,23 +199,37 @@ if img_file_buffer is not None:
 
             st.subheader("🏆 Resultado de la ronda")
 
-            if jugador_normalizado == maquina_normalizada:
+            if jugador_normalizado not in reglas or maquina_normalizada not in reglas:
 
-                st.info("🤝 ¡EMPATE! Ambos eligieron " + gesto)
+                st.error(
+                    "No se reconocieron correctamente los nombres de los gestos. "
+                    "Revisa el archivo labels.txt."
+                )
 
-            elif reglas.get(jugador_normalizado) == maquina_normalizado:
+            elif jugador_normalizado == maquina_normalizada:
 
-                st.success("🎉 ¡GANASTE! Tu " + gesto + " vence a " + maquina)
+                st.info(
+                    "🤝 ¡EMPATE! Ambos eligieron " + gesto
+                )
 
-            elif reglas.get(maquina_normalizada) == jugador_normalizado:
+            elif reglas[jugador_normalizado] == maquina_normalizada:
 
-                st.error("😢 ¡PERDISTE! La " + maquina + " de la computadora vence a tu " + gesto)
+                st.success(
+                    "🎉 ¡GANASTE! Tu " + gesto + " vence a " + maquina
+                )
 
             else:
 
-                st.error("No se pudieron comparar las jugadas. Revisa las etiquetas del modelo.")
+                st.error(
+                    "😢 ¡PERDISTE! La " + maquina +
+                    " de la computadora vence a tu " + gesto
+                )
+
 
         else:
 
-            st.warning("No se pudo reconocer el gesto. Intenta nuevamente.")
+            st.warning(
+                "No se pudo reconocer el gesto. Intenta nuevamente."
+            )
+
 
