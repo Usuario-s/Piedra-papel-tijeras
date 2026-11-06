@@ -1,7 +1,9 @@
 
+
 import paho.mqtt.client as paho
 import time
 import json
+import random
 import streamlit as st
 import cv2
 import numpy as np
@@ -102,7 +104,7 @@ if img_file_buffer is not None:
             )
 
             # ==========================================
-            # ENVIAR GESTO A WOKWI MEDIANTE MQTT
+            # ENVIAR GESTO DEL JUGADOR POR MQTT
             # ==========================================
 
             mensaje = {
@@ -118,7 +120,56 @@ if img_file_buffer is not None:
 
             time.sleep(0.2)
 
+            # ==========================================
+            # ELECCIÓN ALEATORIA DE LA COMPUTADORA
+            # ==========================================
+
+            maquina = random.choice(clases)
+
+            st.subheader("🤖 Elección de la computadora")
+
+            st.write("La computadora eligió:")
+
+            st.header(maquina)
+
+            # ==========================================
+            # COMPARAR LAS JUGADAS
+            # ==========================================
+
+            jugador_normalizado = gesto.strip().lower()
+            maquina_normalizada = maquina.strip().lower()
+
+            # Reglas del juego:
+            # Piedra gana a Tijera
+            # Tijera gana a Papel
+            # Papel gana a Piedra
+
+            reglas = {
+                "piedra": "tijera",
+                "tijera": "papel",
+                "papel": "piedra"
+            }
+
+            # ==========================================
+            # DETERMINAR GANADOR
+            # ==========================================
+
+            st.subheader("🏆 Resultado de la ronda")
+
+            if jugador_normalizado == maquina_normalizada:
+
+                st.info("🤝 ¡EMPATE! Ambos eligieron " + gesto)
+
+            elif reglas.get(jugador_normalizado) == maquina_normalizado:
+
+                st.success("🎉 ¡GANASTE! Tu " + gesto + " vence a " + maquina)
+
+            else:
+
+                st.error("😢 ¡PERDISTE! La " + maquina + " de la computadora vence a tu " + gesto)
+
         else:
 
             st.warning("No se pudo reconocer el gesto. Intenta nuevamente.")
+
 
