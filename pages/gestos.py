@@ -39,7 +39,7 @@ client1.loop_start()
 model = load_model('converted_kerasPTP/keras_model.h5')
 
 # Cargar las etiquetas del modelo
-with open('converted_kerasPPT/labels.txt', 'r') as f:
+with open('converted_kerasPTP/labels.txt', 'r') as f:
     clases = [
         linea.strip().split(maxsplit=1)[1]
         for linea in f.readlines()
