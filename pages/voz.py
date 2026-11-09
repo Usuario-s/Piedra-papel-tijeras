@@ -1,22 +1,53 @@
-
-
 import os
 import streamlit as st
-from bokeh.models import Button, CustomJS
-from streamlit_bokeh_events import streamlit_bokeh_events
-from PIL import Image
-import time
-import glob
-import paho.mqtt.client as paho
-import json
 import random
 import re
-from gtts import gTTS
-from googletrans import Translator
+import json
+import time
+import paho.mqtt.client as paho
+
+from bokeh.models import Button, CustomJS
+from streamlit_bokeh_events import streamlit_bokeh_events
 
 
 # ==========================================
-# DISEÑO VISUAL
+# CONSEJOS, ESTRATEGIAS Y DATOS CURIOSOS
+# ==========================================
+
+consejos = [
+    ("🧠 Estrategia", "Empieza jugando papel: algunos jugadores suelen comenzar con piedra."),
+    ("🧠 Estrategia", "No repitas siempre la misma jugada. Cambiar evita que el rival identifique tus patrones."),
+    ("🧠 Estrategia", "Analiza tus derrotas e intenta identificar qué decisiones te llevaron a perder."),
+    ("🧠 Estrategia", "Si detectas que tu rival repite una jugada, utiliza la opción que la vence."),
+    ("🧠 Estrategia", "Observa las jugadas anteriores de tu rival para encontrar posibles tendencias."),
+    ("🧠 Estrategia", "Evita seguir patrones predecibles: variar tus elecciones puede dificultar que te anticipen."),
+    ("🧠 Estrategia", "Después de un empate, considera cambiar tu jugada para no ser predecible."),
+    ("🎭 Truco psicológico", "Juega con seguridad. Mostrar dudas puede hacer que tu rival intente anticiparse."),
+    ("🎭 Truco psicológico", "Estudia el comportamiento de tu rival: sus hábitos pueden revelar tendencias."),
+    ("🎭 Truco psicológico", "Aprovecha los hábitos de tu contrincante para elegir una jugada que los contrarreste."),
+    ("🎭 Truco psicológico", "No juegues por impulso. Tómate un momento para pensar en las rondas anteriores."),
+    ("🤯 Dato curioso", "La piedra suele ser una elección popular entre los jugadores."),
+    ("🤯 Dato curioso", "Los seres humanos no somos completamente aleatorios: tendemos a repetir patrones."),
+    ("🤯 Dato curioso", "Una estrategia aleatoria equilibrada consiste en elegir cada opción aproximadamente el 33,3 % de las veces."),
+    ("🤯 Dato curioso", "Después de perder, algunas personas cambian su comportamiento y sus siguientes elecciones."),
+    ("🤯 Dato curioso", "No existe una opción invencible: cada gesto tiene una opción que puede vencerlo."),
+    ("🎯 Tip rápido", "Memoriza las reglas: piedra vence a tijera, tijera vence a papel y papel vence a piedra."),
+    ("🎯 Tip rápido", "Lleva un registro de las jugadas de tu rival para detectar repeticiones."),
+    ("🎯 Tip rápido", "No confundas una victoria por suerte con una estrategia que siempre funciona."),
+    ("🎯 Tip rápido", "Sé impredecible: evita que tu rival pueda adivinar tu siguiente movimiento.")
+]
+
+
+def mostrar_consejo_aleatorio():
+    categoria, consejo = random.choice(consejos)
+
+    st.markdown("### 💡 Consejo para tu próxima ronda")
+    st.markdown(f"**{categoria}**")
+    st.info(consejo)
+
+
+# ==========================================
+# DISEÑO VISUAL NEGRO Y GRIS
 # ==========================================
 
 st.markdown("""
@@ -37,12 +68,25 @@ h1, h2, h3, p, label, span {
     color: #FFFFFF;
 }
 
+h1 {
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(255,255,255,0.18);
+}
+
+h2, h3 {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
 .main-title {
     text-align: center;
     font-size: 38px;
     font-weight: 900;
     letter-spacing: 4px;
     color: #FFFFFF;
+    text-shadow: 0 0 15px rgba(255,255,255,0.25);
     margin-bottom: 8px;
 }
 
@@ -81,29 +125,55 @@ hr {
     letter-spacing: 1px;
     margin: 20px 0;
     background: #151515;
+    animation: aparecer 0.6s ease;
 }
 
 .resultado-win {
     color: #65FF91;
     border: 1px solid #00FF66;
-    box-shadow: 0 0 15px rgba(0,255,102,0.25);
+    box-shadow:
+        0 0 8px rgba(0,255,102,0.5),
+        0 0 22px rgba(0,255,102,0.25),
+        inset 0 0 12px rgba(0,255,102,0.08);
+    text-shadow: 0 0 12px rgba(0,255,102,0.8);
 }
 
 .resultado-lose {
     color: #FF6666;
     border: 1px solid #FF3030;
-    box-shadow: 0 0 15px rgba(255,48,48,0.25);
+    box-shadow:
+        0 0 8px rgba(255,48,48,0.5),
+        0 0 22px rgba(255,48,48,0.25),
+        inset 0 0 12px rgba(255,48,48,0.08);
+    text-shadow: 0 0 12px rgba(255,48,48,0.8);
 }
 
 .resultado-draw {
     color: #66BFFF;
     border: 1px solid #168BFF;
-    box-shadow: 0 0 15px rgba(22,139,255,0.25);
+    box-shadow:
+        0 0 8px rgba(22,139,255,0.5),
+        0 0 22px rgba(22,139,255,0.25),
+        inset 0 0 12px rgba(22,139,255,0.08);
+    text-shadow: 0 0 12px rgba(22,139,255,0.8);
 }
 
-.resultado-error {
-    color: #FF7777;
-    border: 1px solid #FF3030;
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+div[data-testid="stAlert"] {
+    background: #1B1B1B;
+    border-radius: 12px;
+    border: 1px solid #555555;
+    color: white;
 }
 
 .gesto-detectado {
@@ -115,17 +185,8 @@ hr {
     font-size: 25px;
     font-weight: 800;
     color: white;
+    box-shadow: 0 0 15px rgba(255,255,255,0.05);
     margin: 15px 0;
-}
-
-.confianza {
-    text-align: center;
-    color: #AAAAAA;
-    font-size: 15px;
-    background: #191919;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #333333;
 }
 
 </style>
@@ -154,55 +215,45 @@ st.divider()
 # ==========================================
 
 def on_publish(client, userdata, result):
-    print("el dato ha sido publicado")
+    print("El dato ha sido publicado")
     pass
 
 
-def on_message(client, userdata, message):
-    global message_received
-    time.sleep(2)
-    message_received = str(message.payload.decode("utf-8"))
-    st.write(message_received)
-
-
 # ==========================================
-# CONFIGURACION MQTT
+# CONFIGURACIÓN MQTT
 # ==========================================
 
 broker = "broker.mqttdashboard.com"
 port = 1883
 
 client1 = paho.Client("GIT-HUBC")
-client1.on_message = on_message
 client1.on_publish = on_publish
+client1.connect(broker, port)
+
+client1.loop_start()
 
 
 # ==========================================
-# FUNCION PARA IDENTIFICAR LA JUGADA
+# FUNCIONES DEL JUEGO
 # ==========================================
 
 def detectar_jugada(transcripcion):
 
-    texto = transcripcion.lower().strip()
-
-    # Buscar las palabras dentro de la transcripcion
     patrones = {
         "piedra": r"\bpiedra\b",
         "papel": r"\bpapel\b",
         "tijera": r"\btijera(s)?\b"
     }
 
-    for jugada, patron in patrones.items():
+    texto = transcripcion.lower().strip()
+
+    for gesto, patron in patrones.items():
 
         if re.search(patron, texto):
-            return jugada
+            return gesto
 
     return None
 
-
-# ==========================================
-# FUNCION PARA DETERMINAR GANADOR
-# ==========================================
 
 def determinar_ganador(jugador, maquina):
 
@@ -223,54 +274,79 @@ def determinar_ganador(jugador, maquina):
 
 
 # ==========================================
-# RECONOCIMIENTO DE VOZ
+# RECONOCIMIENTO POR VOZ
 # ==========================================
 
-st.markdown("### 🎤 Reconocimiento del jugador")
+st.markdown("### 🎙️ Reconocimiento de voz")
 
-st.write("Presiona el botón y di piedra, papel o tijera.")
+st.write("Presiona el botón y di claramente: piedra, papel o tijera.")
 
-stt_button = Button(label=" Inicio ", width=200)
 
-stt_button.js_on_event(
+# BOTÓN DE RECONOCIMIENTO
+
+boton = Button(
+    label="🎙️ Hablar",
+    button_type="primary",
+    width=250
+)
+
+
+# JAVASCRIPT PARA RECONOCIMIENTO DE VOZ
+
+boton.js_on_event(
     "button_click",
     CustomJS(code="""
-        var recognition = new webkitSpeechRecognition();
+        const SpeechRecognition =
+            window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "es-CO";
+        if (!SpeechRecognition) {
+            document.dispatchEvent(
+                new CustomEvent("GET_TEXT", {
+                    detail: "ERROR_NAVEGADOR"
+                })
+            );
+        } else {
 
-        recognition.onresult = function (e) {
+            const recognition = new SpeechRecognition();
 
-            var value = "";
+            recognition.lang = "es-CO";
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
 
-            for (var i = e.resultIndex; i < e.results.length; ++i) {
+            recognition.onresult = function(event) {
 
-                if (e.results[i].isFinal) {
-                    value += e.results[i][0].transcript;
-                }
-            }
-
-            if (value != "") {
+                const texto =
+                    event.results[0][0].transcript;
 
                 document.dispatchEvent(
-                    new CustomEvent("GET_TEXT", {detail: value})
+                    new CustomEvent("GET_TEXT", {
+                        detail: texto
+                    })
                 );
+            };
 
-                recognition.stop();
-            }
+            recognition.onerror = function(event) {
+
+                document.dispatchEvent(
+                    new CustomEvent("GET_TEXT", {
+                        detail: "ERROR_MICROFONO"
+                    })
+                );
+            };
+
+            recognition.start();
         }
-
-        recognition.start();
     """)
 )
 
 
-result = streamlit_bokeh_events(
-    stt_button,
+# MOSTRAR BOTÓN Y RECIBIR TEXTO
+
+resultado_voz = streamlit_bokeh_events(
+    boton,
     events="GET_TEXT",
-    key="listen",
+    key="voz_piedra_papel_tijera",
     refresh_on_update=False,
     override_height=75,
     debounce_time=0
@@ -278,47 +354,59 @@ result = streamlit_bokeh_events(
 
 
 # ==========================================
-# PROCESAR TRANSCRIPCION
+# PROCESAR JUGADA
 # ==========================================
 
-if result and "GET_TEXT" in result:
+if resultado_voz and "GET_TEXT" in resultado_voz:
 
-    transcripcion = result.get("GET_TEXT")
+    transcripcion = resultado_voz["GET_TEXT"]
 
-    st.markdown("### 🗣️ Transcripción")
+    if transcripcion == "ERROR_NAVEGADOR":
 
-    st.markdown(
-        f'<div class="confianza">{transcripcion.upper()}</div>',
-        unsafe_allow_html=True
-    )
+        st.error(
+            "Tu navegador no permite el reconocimiento de voz. "
+            "Prueba con Google Chrome."
+        )
 
-    # Detectar jugada del jugador
-    jugador = detectar_jugada(transcripcion)
+    elif transcripcion == "ERROR_MICROFONO":
 
-
-    # ==========================================
-    # VALIDAR JUGADA
-    # ==========================================
-
-    if jugador is None:
-
-        st.markdown(
-            '<div class="resultado resultado-error">'
-            'No se reconoció ninguna jugada. '
-            'Di piedra, papel o tijera.'
-            '</div>',
-            unsafe_allow_html=True
+        st.error(
+            "No se pudo acceder al micrófono. "
+            "Revisa los permisos del navegador."
         )
 
     else:
 
-        # ==========================================
-        # CONECTAR MQTT
-        # ==========================================
+        st.markdown("### 🗣️ Lo que dijiste")
 
-        try:
+        st.markdown(
+            f'<div class="gesto-detectado">{transcripcion.upper()}</div>',
+            unsafe_allow_html=True
+        )
 
-            client1.connect(broker, port)
+        jugador = detectar_jugada(transcripcion)
+
+
+        if jugador is None:
+
+            st.warning(
+                "No se reconoció una jugada válida. "
+                "Di piedra, papel o tijera."
+            )
+
+        else:
+
+            st.markdown("### ✋ Tu jugada")
+
+            st.markdown(
+                f'<div class="gesto-detectado">{jugador.upper()}</div>',
+                unsafe_allow_html=True
+            )
+
+
+            # ==========================================
+            # PUBLICAR JUGADA POR MQTT
+            # ==========================================
 
             mensaje = {
                 "gesto": jugador
@@ -331,89 +419,65 @@ if result and "GET_TEXT" in result:
                 retain=False
             )
 
-            client1.disconnect()
-
-        except Exception as e:
-
-            st.warning("No se pudo conectar con MQTT: " + str(e))
+            time.sleep(0.2)
 
 
-        # ==========================================
-        # ELECCION DEL JUGADOR
-        # ==========================================
+            # ==========================================
+            # ELECCIÓN DE LA COMPUTADORA
+            # ==========================================
 
-        st.divider()
+            opciones = [
+                "piedra",
+                "papel",
+                "tijera"
+            ]
 
-        st.markdown("### ✋ Tu jugada")
+            maquina = random.choice(opciones)
 
-        emojis = {
-            "piedra": "✊",
-            "papel": "✋",
-            "tijera": "✌️"
-        }
-
-        st.markdown(
-            f'<div class="gesto-detectado">'
-            f'{emojis[jugador]} {jugador.upper()}'
-            f'</div>',
-            unsafe_allow_html=True
-        )
-
-
-        # ==========================================
-        # ELECCION ALEATORIA DE LA MAQUINA
-        # ==========================================
-
-        maquina = random.choice([
-            "piedra",
-            "papel",
-            "tijera"
-        ])
-
-        st.markdown("### 🤖 Jugada de la computadora")
-
-        st.markdown(
-            f'<div class="gesto-detectado">'
-            f'{emojis[maquina]} {maquina.upper()}'
-            f'</div>',
-            unsafe_allow_html=True
-        )
-
-
-        # ==========================================
-        # DETERMINAR GANADOR
-        # ==========================================
-
-        ganador = determinar_ganador(jugador, maquina)
-
-        st.divider()
-
-        st.markdown("### 🏆 Resultado de la ronda")
-
-
-        if ganador == "empate":
+            st.markdown("### 🤖 Jugada de la computadora")
 
             st.markdown(
-                '<div class="resultado resultado-draw">'
-                '🤝 ¡EMPATE! Ambos eligieron la misma jugada.'
-                '</div>',
+                f'<div class="gesto-detectado">{maquina.upper()}</div>',
                 unsafe_allow_html=True
             )
 
-        elif ganador == "jugador":
 
-            st.markdown(
-                f'<div class="resultado resultado-win">'
-                f'🏆 ¡GANASTE! {jugador.upper()} vence a {maquina.upper()}.'
-                f'</div>',
-                unsafe_allow_html=True
+            # ==========================================
+            # DETERMINAR GANADOR
+            # ==========================================
+
+            st.divider()
+
+            st.markdown("### 🏆 Resultado de la ronda")
+
+            ganador = determinar_ganador(
+                jugador,
+                maquina
             )
 
-        else:
 
-            st.markdown(
-                f'<div class="resultado resultado-lose">'
-                f'😢 ¡PERDISTE! {maquina.upper()} vence a {jugador.upper()}.'
-                f'</div>',
-                unsafe_allow_html=True
-            )
+            if ganador == "empate":
+
+                st.markdown(
+                    '<div class="resultado resultado-draw">🤝 ¡EMPATE! Ambos eligieron el mismo gesto.</div>',
+                    unsafe_allow_html=True
+                )
+
+
+            elif ganador == "jugador":
+
+                st.markdown(
+                    f'<div class="resultado resultado-win">🏆 ¡GANASTE! Tu {jugador} vence a {maquina}.</div>',
+                    unsafe_allow_html=True
+                )
+
+
+            else:
+
+                st.markdown(
+                    f'<div class="resultado resultado-lose">😢 ¡PERDISTE! La {maquina} de la computadora vence a tu {jugador}.</div>',
+                    unsafe_allow_html=True
+                )
+
+                # MOSTRAR CONSEJO SOLO SI PIERDE
+                mostrar_consejo_aleatorio()
