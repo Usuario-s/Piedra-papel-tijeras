@@ -1,4 +1,5 @@
 
+
 import os
 import streamlit as st
 import random
@@ -218,7 +219,6 @@ st.divider()
 
 def on_publish(client, userdata, result):
     print("El dato ha sido publicado")
-    pass
 
 
 # ==========================================
@@ -228,11 +228,46 @@ def on_publish(client, userdata, result):
 broker = "broker.mqttdashboard.com"
 port = 1883
 
-client1 = paho.Client("GIT-HUBC")
+client1 = paho.Client(client_id="GIT-HUBC")
 client1.on_publish = on_publish
-client1.connect(broker, port)
+
+client1.connect(broker, port, keepalive=60)
 
 client1.loop_start()
+
+
+# ==========================================
+# ENVIAR RESULTADO AL ESP32
+# ==========================================
+
+def enviar_resultado(resultado):
+
+    mensaje = {
+        "resultado": resultado
+    }
+
+    try:
+
+        info = client1.publish(
+            "IMIA",
+            json.dumps(mensaje),
+            qos=1,
+            retain=False
+        )
+
+        info.wait_for_publish(timeout=5)
+
+        if info.is_published():
+
+            print(f"Resultado enviado al ESP32: {resultado}")
+
+        else:
+
+            print(f"No se pudo confirmar el envío: {resultado}")
+
+    except Exception as e:
+
+        print(f"Error al enviar resultado MQTT: {e}")
 
 
 # ==========================================
@@ -473,6 +508,9 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
                     unsafe_allow_html=True
                 )
 
+                # ENVIAR EMPATE AL ESP32
+                enviar_resultado("Empate")
+
 
             elif ganador == "jugador":
 
@@ -482,12 +520,7 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
                 )
 
                 # ENVIAR VICTORIA AL ESP32
-                client1.publish(
-                    "IMIA",
-                    json.dumps({"gesto": "Abre"}),
-                    qos=0,
-                    retain=False
-                )
+                enviar_resultado("Gana")
 
 
             else:
@@ -498,12 +531,7 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
                 )
 
                 # ENVIAR DERROTA AL ESP32
-                client1.publish(
-                    "IMIA",
-                    json.dumps({"gesto": "Cierra"}),
-                    qos=0,
-                    retain=False
-                )
+                enviar_resultado("Pierde")
 
                 mostrar_consejo_aleatorio()
 
