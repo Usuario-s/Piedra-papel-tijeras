@@ -7,6 +7,7 @@ import streamlit as st
 import cv2
 import numpy as np
 
+#from PIL import Image
 from PIL import Image as Image, ImageOps as ImagOps
 from keras.models import load_model
 
@@ -40,6 +41,7 @@ consejos = [
 
 
 def mostrar_consejo_aleatorio():
+
     categoria, consejo = random.choice(consejos)
 
     st.markdown("### 💡 Consejo para tu próxima ronda")
@@ -54,21 +56,25 @@ def mostrar_consejo_aleatorio():
 st.markdown("""
 <style>
 
+/* FONDO GENERAL */
 .stApp {
     background: linear-gradient(135deg, #080808 0%, #151515 55%, #080808 100%);
     color: white;
 }
 
+/* CONTENEDOR PRINCIPAL */
 .block-container {
     max-width: 1050px;
     padding-top: 2rem;
     padding-bottom: 3rem;
 }
 
+/* TEXTOS */
 h1, h2, h3, p, label, span {
     color: #FFFFFF;
 }
 
+/* TITULOS */
 h1 {
     text-align: center;
     font-weight: 800;
@@ -81,6 +87,7 @@ h2, h3 {
     letter-spacing: 1px;
 }
 
+/* TITULO PRINCIPAL */
 .main-title {
     text-align: center;
     font-size: 38px;
@@ -99,10 +106,12 @@ h2, h3 {
     margin-bottom: 35px;
 }
 
+/* SEPARADORES */
 hr {
     border-color: #333333 !important;
 }
 
+/* CONTENEDOR DE LA CAMARA */
 div[data-testid="stCameraInput"] {
     background: #171717;
     border: 1px solid #444444;
@@ -111,6 +120,7 @@ div[data-testid="stCameraInput"] {
     box-shadow: 0 0 18px rgba(255,255,255,0.04);
 }
 
+/* BOTONES */
 .stButton > button {
     background: linear-gradient(135deg, #333333, #151515);
     color: white;
@@ -125,6 +135,7 @@ div[data-testid="stCameraInput"] {
     color: white;
 }
 
+/* RESULTADOS */
 .resultado {
     padding: 22px;
     border-radius: 15px;
@@ -137,6 +148,7 @@ div[data-testid="stCameraInput"] {
     animation: aparecer 0.6s ease;
 }
 
+/* VICTORIA */
 .resultado-win {
     color: #65FF91;
     border: 1px solid #00FF66;
@@ -147,6 +159,7 @@ div[data-testid="stCameraInput"] {
     text-shadow: 0 0 12px rgba(0,255,102,0.8);
 }
 
+/* DERROTA */
 .resultado-lose {
     color: #FF6666;
     border: 1px solid #FF3030;
@@ -157,6 +170,7 @@ div[data-testid="stCameraInput"] {
     text-shadow: 0 0 12px rgba(255,48,48,0.8);
 }
 
+/* EMPATE */
 .resultado-draw {
     color: #66BFFF;
     border: 1px solid #168BFF;
@@ -167,12 +181,14 @@ div[data-testid="stCameraInput"] {
     text-shadow: 0 0 12px rgba(22,139,255,0.8);
 }
 
+/* ERROR */
 .resultado-error {
     color: #FF7777;
     border: 1px solid #FF3030;
     box-shadow: 0 0 15px rgba(255,48,48,0.2);
 }
 
+/* ANIMACION */
 @keyframes aparecer {
     from {
         opacity: 0;
@@ -184,6 +200,7 @@ div[data-testid="stCameraInput"] {
     }
 }
 
+/* ALERTAS */
 div[data-testid="stAlert"] {
     background: #1B1B1B;
     border-radius: 12px;
@@ -191,6 +208,7 @@ div[data-testid="stAlert"] {
     color: white;
 }
 
+/* TEXTO DE CONFIANZA */
 .confianza {
     text-align: center;
     color: #AAAAAA;
@@ -201,6 +219,7 @@ div[data-testid="stAlert"] {
     border: 1px solid #333333;
 }
 
+/* ETIQUETAS DE LOS GESTOS */
 .gesto-detectado {
     background: linear-gradient(135deg, #242424, #111111);
     border: 1px solid #555555;
@@ -263,18 +282,18 @@ client1.on_message = on_message
 client1.on_publish = on_publish
 client1.connect(broker, port)
 
+# Iniciar comunicación MQTT
 client1.loop_start()
 
 
 # ==========================================
-# CARGAR MODELO
+# CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
 # ==========================================
 
 model = load_model('converted_kerasPTP/keras_model.h5')
 
 
-# CARGAR ETIQUETAS
-
+# Cargar las etiquetas del modelo
 with open('converted_kerasPTP/labels.txt', 'r') as f:
 
     clases = [
@@ -289,10 +308,6 @@ data = np.ndarray(
     dtype=np.float32
 )
 
-
-# ==========================================
-# RECONOCIMIENTO DEL JUGADOR
-# ==========================================
 
 st.markdown("### 📷 Reconocimiento del jugador")
 
@@ -357,7 +372,7 @@ if img_file_buffer is not None:
 
 
             # ==========================================
-            # ENVIAR GESTO POR MQTT
+            # ENVIAR GESTO DEL JUGADOR POR MQTT
             # ==========================================
 
             mensaje = {
@@ -375,7 +390,7 @@ if img_file_buffer is not None:
 
 
             # ==========================================
-            # ELECCIÓN DE LA COMPUTADORA
+            # ELECCIÓN ALEATORIA DE LA COMPUTADORA
             # ==========================================
 
             maquina = random.choice(clases)
@@ -389,7 +404,7 @@ if img_file_buffer is not None:
 
 
             # ==========================================
-            # NORMALIZAR LOS GESTOS
+            # NORMALIZAR LOS NOMBRES DE LOS GESTOS
             # ==========================================
 
             jugador_normalizado = gesto.strip().lower()
@@ -403,13 +418,11 @@ if img_file_buffer is not None:
             }
 
             jugador_normalizado = equivalencias.get(
-                jugador_normalizado,
-                jugador_normalizado
+                jugador_normalizado, jugador_normalizado
             )
 
             maquina_normalizada = equivalencias.get(
-                maquina_normalizada,
-                maquina_normalizada
+                maquina_normalizada, maquina_normalizada
             )
 
 
@@ -456,6 +469,14 @@ if img_file_buffer is not None:
                     unsafe_allow_html=True
                 )
 
+                # ENVIAR VICTORIA AL ESP32
+                client1.publish(
+                    "IMIA",
+                    json.dumps({"gesto": "Abre"}),
+                    qos=0,
+                    retain=False
+                )
+
 
             else:
 
@@ -464,7 +485,14 @@ if img_file_buffer is not None:
                     unsafe_allow_html=True
                 )
 
-                # MOSTRAR CONSEJO SOLO SI PIERDE
+                # ENVIAR DERROTA AL ESP32
+                client1.publish(
+                    "IMIA",
+                    json.dumps({"gesto": "Cierra"}),
+                    qos=0,
+                    retain=False
+                )
+
                 mostrar_consejo_aleatorio()
 
 
@@ -473,3 +501,4 @@ if img_file_buffer is not None:
             st.warning(
                 "No se pudo reconocer el gesto. Intenta nuevamente."
             )
+
