@@ -1,4 +1,5 @@
 
+
 import paho.mqtt.client as paho
 import time
 import json
@@ -260,7 +261,6 @@ st.divider()
 
 def on_publish(client, userdata, result):
     print("el dato ha sido publicado \n")
-    pass
 
 
 def on_message(client, userdata, message):
@@ -277,13 +277,48 @@ def on_message(client, userdata, message):
 broker = "broker.mqttdashboard.com"
 port = 1883
 
-client1 = paho.Client("APP_CERR")
+client1 = paho.Client(client_id="APP_CERR")
 client1.on_message = on_message
 client1.on_publish = on_publish
-client1.connect(broker, port)
+
+client1.connect(broker, port, keepalive=60)
 
 # Iniciar comunicación MQTT
 client1.loop_start()
+
+
+# ==========================================
+# ENVIAR RESULTADO AL ESP32
+# ==========================================
+
+def enviar_resultado(resultado):
+
+    mensaje = {
+        "resultado": resultado
+    }
+
+    try:
+
+        info = client1.publish(
+            "IMIA",
+            json.dumps(mensaje),
+            qos=1,
+            retain=False
+        )
+
+        info.wait_for_publish(timeout=5)
+
+        if info.is_published():
+
+            print(f"Resultado enviado al ESP32: {resultado}")
+
+        else:
+
+            print(f"No se pudo confirmar el envío: {resultado}")
+
+    except Exception as e:
+
+        print(f"Error al enviar resultado MQTT: {e}")
 
 
 # ==========================================
@@ -461,6 +496,9 @@ if img_file_buffer is not None:
                     unsafe_allow_html=True
                 )
 
+                # ENVIAR EMPATE AL ESP32
+                enviar_resultado("Empate")
+
 
             elif reglas[jugador_normalizado] == maquina_normalizada:
 
@@ -470,12 +508,7 @@ if img_file_buffer is not None:
                 )
 
                 # ENVIAR VICTORIA AL ESP32
-                client1.publish(
-                    "IMIA",
-                    json.dumps({"gesto": "Abre"}),
-                    qos=0,
-                    retain=False
-                )
+                enviar_resultado("Gana")
 
 
             else:
@@ -486,12 +519,7 @@ if img_file_buffer is not None:
                 )
 
                 # ENVIAR DERROTA AL ESP32
-                client1.publish(
-                    "IMIA",
-                    json.dumps({"gesto": "Cierra"}),
-                    qos=0,
-                    retain=False
-                )
+                enviar_resultado("Pierde")
 
                 mostrar_consejo_aleatorio()
 
@@ -501,4 +529,3 @@ if img_file_buffer is not None:
             st.warning(
                 "No se pudo reconocer el gesto. Intenta nuevamente."
             )
-
