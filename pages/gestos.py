@@ -1,5 +1,4 @@
 
-
 import paho.mqtt.client as paho
 import time
 import json
@@ -8,9 +7,45 @@ import streamlit as st
 import cv2
 import numpy as np
 
-#from PIL import Image
 from PIL import Image as Image, ImageOps as ImagOps
 from keras.models import load_model
+
+
+# ==========================================
+# CONSEJOS, ESTRATEGIAS Y DATOS CURIOSOS
+# ==========================================
+
+consejos = [
+    ("🧠 Estrategia", "Empieza jugando papel: algunos jugadores suelen comenzar con piedra."),
+    ("🧠 Estrategia", "No repitas siempre la misma jugada. Cambiar evita que el rival identifique tus patrones."),
+    ("🧠 Estrategia", "Analiza tus derrotas e intenta identificar qué decisiones te llevaron a perder."),
+    ("🧠 Estrategia", "Si detectas que tu rival repite una jugada, utiliza la opción que la vence."),
+    ("🧠 Estrategia", "Observa las jugadas anteriores de tu rival para encontrar posibles tendencias."),
+    ("🧠 Estrategia", "Evita seguir patrones predecibles: variar tus elecciones puede dificultar que te anticipen."),
+    ("🧠 Estrategia", "Después de un empate, considera cambiar tu jugada para no ser predecible."),
+    ("🎭 Truco psicológico", "Juega con seguridad. Mostrar dudas puede hacer que tu rival intente anticiparse."),
+    ("🎭 Truco psicológico", "Estudia el comportamiento de tu rival: sus hábitos pueden revelar tendencias."),
+    ("🎭 Truco psicológico", "Aprovecha los hábitos de tu contrincante para elegir una jugada que los contrarreste."),
+    ("🎭 Truco psicológico", "No juegues por impulso. Tómate un momento para pensar en las rondas anteriores."),
+    ("🤯 Dato curioso", "La piedra suele ser una elección popular entre los jugadores."),
+    ("🤯 Dato curioso", "Los seres humanos no somos completamente aleatorios: tendemos a repetir patrones."),
+    ("🤯 Dato curioso", "Una estrategia aleatoria equilibrada consiste en elegir cada opción aproximadamente el 33,3 % de las veces."),
+    ("🤯 Dato curioso", "Después de perder, algunas personas cambian su comportamiento y sus siguientes elecciones."),
+    ("🤯 Dato curioso", "No existe una opción invencible: cada gesto tiene una opción que puede vencerlo."),
+    ("🎯 Tip rápido", "Memoriza las reglas: piedra vence a tijera, tijera vence a papel y papel vence a piedra."),
+    ("🎯 Tip rápido", "Lleva un registro de las jugadas de tu rival para detectar repeticiones."),
+    ("🎯 Tip rápido", "No confundas una victoria por suerte con una estrategia que siempre funciona."),
+    ("🎯 Tip rápido", "Sé impredecible: evita que tu rival pueda adivinar tu siguiente movimiento.")
+]
+
+
+def mostrar_consejo_aleatorio():
+    categoria, consejo = random.choice(consejos)
+
+    st.markdown("### 💡 Consejo para tu próxima ronda")
+    st.markdown(f"**{categoria}**")
+    st.info(consejo)
+
 
 # ==========================================
 # DISEÑO VISUAL NEGRO Y GRIS
@@ -19,25 +54,21 @@ from keras.models import load_model
 st.markdown("""
 <style>
 
-/* FONDO GENERAL */
 .stApp {
     background: linear-gradient(135deg, #080808 0%, #151515 55%, #080808 100%);
     color: white;
 }
 
-/* CONTENEDOR PRINCIPAL */
 .block-container {
     max-width: 1050px;
     padding-top: 2rem;
     padding-bottom: 3rem;
 }
 
-/* TEXTOS */
 h1, h2, h3, p, label, span {
     color: #FFFFFF;
 }
 
-/* TITULOS */
 h1 {
     text-align: center;
     font-weight: 800;
@@ -50,7 +81,6 @@ h2, h3 {
     letter-spacing: 1px;
 }
 
-/* TITULO PRINCIPAL */
 .main-title {
     text-align: center;
     font-size: 38px;
@@ -69,12 +99,10 @@ h2, h3 {
     margin-bottom: 35px;
 }
 
-/* SEPARADORES */
 hr {
     border-color: #333333 !important;
 }
 
-/* CONTENEDOR DE LA CAMARA */
 div[data-testid="stCameraInput"] {
     background: #171717;
     border: 1px solid #444444;
@@ -83,7 +111,6 @@ div[data-testid="stCameraInput"] {
     box-shadow: 0 0 18px rgba(255,255,255,0.04);
 }
 
-/* BOTONES */
 .stButton > button {
     background: linear-gradient(135deg, #333333, #151515);
     color: white;
@@ -98,7 +125,6 @@ div[data-testid="stCameraInput"] {
     color: white;
 }
 
-/* RESULTADOS */
 .resultado {
     padding: 22px;
     border-radius: 15px;
@@ -111,7 +137,6 @@ div[data-testid="stCameraInput"] {
     animation: aparecer 0.6s ease;
 }
 
-/* VICTORIA */
 .resultado-win {
     color: #65FF91;
     border: 1px solid #00FF66;
@@ -122,7 +147,6 @@ div[data-testid="stCameraInput"] {
     text-shadow: 0 0 12px rgba(0,255,102,0.8);
 }
 
-/* DERROTA */
 .resultado-lose {
     color: #FF6666;
     border: 1px solid #FF3030;
@@ -133,7 +157,6 @@ div[data-testid="stCameraInput"] {
     text-shadow: 0 0 12px rgba(255,48,48,0.8);
 }
 
-/* EMPATE */
 .resultado-draw {
     color: #66BFFF;
     border: 1px solid #168BFF;
@@ -144,14 +167,12 @@ div[data-testid="stCameraInput"] {
     text-shadow: 0 0 12px rgba(22,139,255,0.8);
 }
 
-/* ERROR */
 .resultado-error {
     color: #FF7777;
     border: 1px solid #FF3030;
     box-shadow: 0 0 15px rgba(255,48,48,0.2);
 }
 
-/* ANIMACION */
 @keyframes aparecer {
     from {
         opacity: 0;
@@ -163,7 +184,6 @@ div[data-testid="stCameraInput"] {
     }
 }
 
-/* ALERTAS */
 div[data-testid="stAlert"] {
     background: #1B1B1B;
     border-radius: 12px;
@@ -171,7 +191,6 @@ div[data-testid="stAlert"] {
     color: white;
 }
 
-/* TEXTO DE CONFIANZA */
 .confianza {
     text-align: center;
     color: #AAAAAA;
@@ -182,7 +201,6 @@ div[data-testid="stAlert"] {
     border: 1px solid #333333;
 }
 
-/* ETIQUETAS DE LOS GESTOS */
 .gesto-detectado {
     background: linear-gradient(135deg, #242424, #111111);
     border: 1px solid #555555;
@@ -204,8 +222,15 @@ div[data-testid="stAlert"] {
 # TITULO
 # ==========================================
 
-st.markdown('<div class="main-title">PIEDRA · PAPEL · TIJERAS</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">DESAFÍA A LA COMPUTADORA</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="main-title">PIEDRA · PAPEL · TIJERAS</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="subtitle">DESAFÍA A LA COMPUTADORA</div>',
+    unsafe_allow_html=True
+)
 
 st.divider()
 
@@ -238,19 +263,20 @@ client1.on_message = on_message
 client1.on_publish = on_publish
 client1.connect(broker, port)
 
-# Iniciar comunicación MQTT
 client1.loop_start()
 
 
 # ==========================================
-# CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
+# CARGAR MODELO
 # ==========================================
 
 model = load_model('converted_kerasPTP/keras_model.h5')
 
 
-# Cargar las etiquetas del modelo
+# CARGAR ETIQUETAS
+
 with open('converted_kerasPTP/labels.txt', 'r') as f:
+
     clases = [
         linea.strip().split(maxsplit=1)[1]
         for linea in f.readlines()
@@ -258,7 +284,15 @@ with open('converted_kerasPTP/labels.txt', 'r') as f:
     ]
 
 
-data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+data = np.ndarray(
+    shape=(1, 224, 224, 3),
+    dtype=np.float32
+)
+
+
+# ==========================================
+# RECONOCIMIENTO DEL JUGADOR
+# ==========================================
 
 st.markdown("### 📷 Reconocimiento del jugador")
 
@@ -267,26 +301,26 @@ img_file_buffer = st.camera_input("Toma una foto para jugar")
 
 if img_file_buffer is not None:
 
-    # To read image file buffer with OpenCV:
-    data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+    data = np.ndarray(
+        shape=(1, 224, 224, 3),
+        dtype=np.float32
+    )
 
-    # To read image file buffer as a PIL Image:
     img = Image.open(img_file_buffer).convert("RGB")
 
     newsize = (224, 224)
     img = img.resize(newsize)
 
-    # To convert PIL Image to numpy array:
     img_array = np.array(img)
 
-    # Normalize the image
-    normalized_image_array = (img_array.astype(np.float32) / 127.5) - 1
+    normalized_image_array = (
+        img_array.astype(np.float32) / 127.5
+    ) - 1
 
-    # Load the image into the array
     data[0] = normalized_image_array
 
-    # Run the inference
     prediction = model.predict(data, verbose=0)
+
     print(prediction)
 
 
@@ -300,13 +334,10 @@ if img_file_buffer is not None:
 
     else:
 
-        # Obtener la clase con mayor probabilidad
         indice = np.argmax(prediction[0])
 
-        # Obtener el nivel de confianza
         confianza = prediction[0][indice]
 
-        # Identificar el gesto
         gesto = clases[indice]
 
 
@@ -326,7 +357,7 @@ if img_file_buffer is not None:
 
 
             # ==========================================
-            # ENVIAR GESTO DEL JUGADOR POR MQTT
+            # ENVIAR GESTO POR MQTT
             # ==========================================
 
             mensaje = {
@@ -344,7 +375,7 @@ if img_file_buffer is not None:
 
 
             # ==========================================
-            # ELECCIÓN ALEATORIA DE LA COMPUTADORA
+            # ELECCIÓN DE LA COMPUTADORA
             # ==========================================
 
             maquina = random.choice(clases)
@@ -358,13 +389,12 @@ if img_file_buffer is not None:
 
 
             # ==========================================
-            # NORMALIZAR LOS NOMBRES DE LOS GESTOS
+            # NORMALIZAR LOS GESTOS
             # ==========================================
 
             jugador_normalizado = gesto.strip().lower()
             maquina_normalizada = maquina.strip().lower()
 
-            # Unificar Tijera y Tijeras
             equivalencias = {
                 "tijeras": "tijera",
                 "tijera": "tijera",
@@ -373,21 +403,19 @@ if img_file_buffer is not None:
             }
 
             jugador_normalizado = equivalencias.get(
-                jugador_normalizado, jugador_normalizado
+                jugador_normalizado,
+                jugador_normalizado
             )
 
             maquina_normalizada = equivalencias.get(
-                maquina_normalizada, maquina_normalizada
+                maquina_normalizada,
+                maquina_normalizada
             )
 
 
             # ==========================================
             # REGLAS DEL JUEGO
             # ==========================================
-
-            # Piedra vence a Tijera
-            # Tijera vence a Papel
-            # Papel vence a Piedra
 
             reglas = {
                 "piedra": "tijera",
@@ -401,7 +429,9 @@ if img_file_buffer is not None:
             # ==========================================
 
             st.divider()
+
             st.markdown("### 🏆 Resultado de la ronda")
+
 
             if jugador_normalizado not in reglas or maquina_normalizada not in reglas:
 
@@ -410,12 +440,14 @@ if img_file_buffer is not None:
                     unsafe_allow_html=True
                 )
 
+
             elif jugador_normalizado == maquina_normalizada:
 
                 st.markdown(
                     '<div class="resultado resultado-draw">🤝 ¡EMPATE! Ambos eligieron el mismo gesto.</div>',
                     unsafe_allow_html=True
                 )
+
 
             elif reglas[jugador_normalizado] == maquina_normalizada:
 
@@ -424,6 +456,7 @@ if img_file_buffer is not None:
                     unsafe_allow_html=True
                 )
 
+
             else:
 
                 st.markdown(
@@ -431,10 +464,12 @@ if img_file_buffer is not None:
                     unsafe_allow_html=True
                 )
 
+                # MOSTRAR CONSEJO SOLO SI PIERDE
+                mostrar_consejo_aleatorio()
+
 
         else:
 
             st.warning(
                 "No se pudo reconocer el gesto. Intenta nuevamente."
             )
-
