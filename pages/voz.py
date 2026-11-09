@@ -1,3 +1,4 @@
+
 import os
 import streamlit as st
 import random
@@ -39,6 +40,7 @@ consejos = [
 
 
 def mostrar_consejo_aleatorio():
+
     categoria, consejo = random.choice(consejos)
 
     st.markdown("### 💡 Consejo para tu próxima ronda")
@@ -282,8 +284,6 @@ st.markdown("### 🎙️ Reconocimiento de voz")
 st.write("Presiona el botón y di claramente: piedra, papel o tijera.")
 
 
-# BOTÓN DE RECONOCIMIENTO
-
 boton = Button(
     label="🎙️ Hablar",
     button_type="primary",
@@ -291,7 +291,9 @@ boton = Button(
 )
 
 
+# ==========================================
 # JAVASCRIPT PARA RECONOCIMIENTO DE VOZ
+# ==========================================
 
 boton.js_on_event(
     "button_click",
@@ -300,11 +302,13 @@ boton.js_on_event(
             window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
+
             document.dispatchEvent(
                 new CustomEvent("GET_TEXT", {
                     detail: "ERROR_NAVEGADOR"
                 })
             );
+
         } else {
 
             const recognition = new SpeechRecognition();
@@ -341,7 +345,9 @@ boton.js_on_event(
 )
 
 
+# ==========================================
 # MOSTRAR BOTÓN Y RECIBIR TEXTO
+# ==========================================
 
 resultado_voz = streamlit_bokeh_events(
     boton,
@@ -361,6 +367,7 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
 
     transcripcion = resultado_voz["GET_TEXT"]
 
+
     if transcripcion == "ERROR_NAVEGADOR":
 
         st.error(
@@ -368,12 +375,14 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
             "Prueba con Google Chrome."
         )
 
+
     elif transcripcion == "ERROR_MICROFONO":
 
         st.error(
             "No se pudo acceder al micrófono. "
             "Revisa los permisos del navegador."
         )
+
 
     else:
 
@@ -394,6 +403,7 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
                 "Di piedra, papel o tijera."
             )
 
+
         else:
 
             st.markdown("### ✋ Tu jugada")
@@ -405,7 +415,7 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
 
 
             # ==========================================
-            # PUBLICAR JUGADA POR MQTT
+            # PUBLICAR JUGADA ORIGINAL POR MQTT
             # ==========================================
 
             mensaje = {
@@ -471,6 +481,14 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
                     unsafe_allow_html=True
                 )
 
+                # ENVIAR VICTORIA AL ESP32
+                client1.publish(
+                    "IMIA",
+                    json.dumps({"gesto": "Abre"}),
+                    qos=0,
+                    retain=False
+                )
+
 
             else:
 
@@ -479,5 +497,13 @@ if resultado_voz and "GET_TEXT" in resultado_voz:
                     unsafe_allow_html=True
                 )
 
-                # MOSTRAR CONSEJO SOLO SI PIERDE
+                # ENVIAR DERROTA AL ESP32
+                client1.publish(
+                    "IMIA",
+                    json.dumps({"gesto": "Cierra"}),
+                    qos=0,
+                    retain=False
+                )
+
                 mostrar_consejo_aleatorio()
+
