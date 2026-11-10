@@ -1,483 +1,531 @@
 
-
-import streamlit as st
 import paho.mqtt.client as paho
 import time
 import json
 import random
+import streamlit as st
 import cv2
 import numpy as np
 
-from PIL import Image, ImageOps
+#from PIL import Image
+from PIL import Image as Image, ImageOps as ImagOps
 from keras.models import load_model
 
 
-# =========================================================
-# CONFIGURACIÓN DE LA PÁGINA
-# =========================================================
-
-st.set_page_config(
-    page_title="Piedra, Papel o Tijera",
-    page_icon="✊",
-    layout="centered"
-)
-
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #101010;
-        color: white;
-    }
-
-    h1, h2, h3, p, label {
-        color: white !important;
-    }
-
-    .titulo {
-        text-align: center;
-        font-size: 42px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-
-    .subtitulo {
-        text-align: center;
-        color: #bdbdbd !important;
-        font-size: 17px;
-        margin-bottom: 30px;
-    }
-
-    .resultado {
-        text-align: center;
-        padding: 25px;
-        border-radius: 15px;
-        margin-top: 20px;
-        background-color: #202020;
-    }
-
-    .victoria {
-        color: #00e676 !important;
-        font-size: 32px;
-        font-weight: bold;
-    }
-
-    .derrota {
-        color: #ff5252 !important;
-        font-size: 32px;
-        font-weight: bold;
-    }
-
-    .empate {
-        color: #40c4ff !important;
-        font-size: 32px;
-        font-weight: bold;
-    }
-
-    .jugada {
-        font-size: 20px;
-        text-align: center;
-        margin-top: 12px;
-    }
-
-    div.stButton > button {
-        background-color: #292929;
-        color: white;
-        border: 1px solid #555;
-        border-radius: 10px;
-        padding: 10px 25px;
-        font-weight: bold;
-    }
-
-    div.stButton > button:hover {
-        background-color: #444;
-        color: white;
-        border: 1px solid white;
-    }
-
-    [data-testid="stCameraInput"] {
-        border-radius: 12px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-
-st.markdown(
-    '<div class="titulo">PIEDRA, PAPEL O TIJERA</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitulo">Realiza tu jugada frente a la cámara y reta a la máquina.</div>',
-    unsafe_allow_html=True
-)
-
-
-# =========================================================
-# CONSEJOS
-# =========================================================
+# ==========================================
+# CONSEJOS, ESTRATEGIAS Y DATOS CURIOSOS
+# ==========================================
 
 consejos = [
-    "Observa los patrones de tus contrincantes.",
-    "No repitas siempre la misma jugada.",
-    "Intenta variar tus movimientos.",
-    "Recuerda que la piedra vence a la tijera.",
-    "El papel vence a la piedra.",
-    "La tijera vence al papel.",
-    "No existe una jugada que gane siempre.",
-    "Evita actuar de manera demasiado predecible.",
-    "Presta atención a las jugadas anteriores.",
-    "Cambiar de estrategia puede ayudarte.",
-    "No te apresures al elegir tu jugada.",
-    "La aleatoriedad puede ser una buena estrategia.",
-    "Intenta no dejarte llevar por la última ronda.",
-    "A veces conviene romper tus propios patrones.",
-    "Mantén la calma después de perder.",
-    "Recuerda que cada ronda es independiente.",
-    "No siempre el rival elegirá lo que esperas.",
-    "Alternar entre piedra, papel y tijera dificulta anticiparte.",
-    "Analiza tus decisiones después de cada partida.",
-    "¡Sigue practicando para mejorar!"
+    ("🧠 Estrategia", "Empieza jugando papel: algunos jugadores suelen comenzar con piedra."),
+    ("🧠 Estrategia", "No repitas siempre la misma jugada. Cambiar evita que el rival identifique tus patrones."),
+    ("🧠 Estrategia", "Analiza tus derrotas e intenta identificar qué decisiones te llevaron a perder."),
+    ("🧠 Estrategia", "Si detectas que tu rival repite una jugada, utiliza la opción que la vence."),
+    ("🧠 Estrategia", "Observa las jugadas anteriores de tu rival para encontrar posibles tendencias."),
+    ("🧠 Estrategia", "Evita seguir patrones predecibles: variar tus elecciones puede dificultar que te anticipen."),
+    ("🧠 Estrategia", "Después de un empate, considera cambiar tu jugada para no ser predecible."),
+    ("🎭 Truco psicológico", "Juega con seguridad. Mostrar dudas puede hacer que tu rival intente anticiparse."),
+    ("🎭 Truco psicológico", "Estudia el comportamiento de tu rival: sus hábitos pueden revelar tendencias."),
+    ("🎭 Truco psicológico", "Aprovecha los hábitos de tu contrincante para elegir una jugada que los contrarreste."),
+    ("🎭 Truco psicológico", "No juegues por impulso. Tómate un momento para pensar en las rondas anteriores."),
+    ("🤯 Dato curioso", "La piedra suele ser una elección popular entre los jugadores."),
+    ("🤯 Dato curioso", "Los seres humanos no somos completamente aleatorios: tendemos a repetir patrones."),
+    ("🤯 Dato curioso", "Una estrategia aleatoria equilibrada consiste en elegir cada opción aproximadamente el 33,3 % de las veces."),
+    ("🤯 Dato curioso", "Después de perder, algunas personas cambian su comportamiento y sus siguientes elecciones."),
+    ("🤯 Dato curioso", "No existe una opción invencible: cada gesto tiene una opción que puede vencerlo."),
+    ("🎯 Tip rápido", "Memoriza las reglas: piedra vence a tijera, tijera vence a papel y papel vence a piedra."),
+    ("🎯 Tip rápido", "Lleva un registro de las jugadas de tu rival para detectar repeticiones."),
+    ("🎯 Tip rápido", "No confundas una victoria por suerte con una estrategia que siempre funciona."),
+    ("🎯 Tip rápido", "Sé impredecible: evita que tu rival pueda adivinar tu siguiente movimiento.")
 ]
 
 
 def mostrar_consejo_aleatorio():
-    consejo = random.choice(consejos)
 
-    st.markdown(
-        f"""
-        <div class="resultado">
-            <h3>💡 CONSEJO</h3>
-            <p>{consejo}</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    categoria, consejo = random.choice(consejos)
+
+    st.markdown("### 💡 Consejo para tu próxima ronda")
+    st.markdown(f"**{categoria}**")
+    st.info(consejo)
 
 
-# =========================================================
+# ==========================================
+# DISEÑO VISUAL NEGRO Y GRIS
+# ==========================================
+
+st.markdown("""
+<style>
+
+/* FONDO GENERAL */
+.stApp {
+    background: linear-gradient(135deg, #080808 0%, #151515 55%, #080808 100%);
+    color: white;
+}
+
+/* CONTENEDOR PRINCIPAL */
+.block-container {
+    max-width: 1050px;
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+/* TEXTOS */
+h1, h2, h3, p, label, span {
+    color: #FFFFFF;
+}
+
+/* TITULOS */
+h1 {
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(255,255,255,0.18);
+}
+
+h2, h3 {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* TITULO PRINCIPAL */
+.main-title {
+    text-align: center;
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #FFFFFF;
+    text-shadow: 0 0 15px rgba(255,255,255,0.25);
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #999999;
+    font-size: 14px;
+    letter-spacing: 3px;
+    margin-bottom: 35px;
+}
+
+/* SEPARADORES */
+hr {
+    border-color: #333333 !important;
+}
+
+/* CONTENEDOR DE LA CAMARA */
+div[data-testid="stCameraInput"] {
+    background: #171717;
+    border: 1px solid #444444;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 0 18px rgba(255,255,255,0.04);
+}
+
+/* BOTONES */
+.stButton > button {
+    background: linear-gradient(135deg, #333333, #151515);
+    color: white;
+    border: 1px solid #666666;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover {
+    border-color: white;
+    box-shadow: 0 0 12px rgba(255,255,255,0.25);
+    color: white;
+}
+
+/* RESULTADOS */
+.resultado {
+    padding: 22px;
+    border-radius: 15px;
+    text-align: center;
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin: 20px 0;
+    background: #151515;
+    animation: aparecer 0.6s ease;
+}
+
+/* VICTORIA */
+.resultado-win {
+    color: #65FF91;
+    border: 1px solid #00FF66;
+    box-shadow:
+        0 0 8px rgba(0,255,102,0.5),
+        0 0 22px rgba(0,255,102,0.25),
+        inset 0 0 12px rgba(0,255,102,0.08);
+    text-shadow: 0 0 12px rgba(0,255,102,0.8);
+}
+
+/* DERROTA */
+.resultado-lose {
+    color: #FF6666;
+    border: 1px solid #FF3030;
+    box-shadow:
+        0 0 8px rgba(255,48,48,0.5),
+        0 0 22px rgba(255,48,48,0.25),
+        inset 0 0 12px rgba(255,48,48,0.08);
+    text-shadow: 0 0 12px rgba(255,48,48,0.8);
+}
+
+/* EMPATE */
+.resultado-draw {
+    color: #66BFFF;
+    border: 1px solid #168BFF;
+    box-shadow:
+        0 0 8px rgba(22,139,255,0.5),
+        0 0 22px rgba(22,139,255,0.25),
+        inset 0 0 12px rgba(22,139,255,0.08);
+    text-shadow: 0 0 12px rgba(22,139,255,0.8);
+}
+
+/* ERROR */
+.resultado-error {
+    color: #FF7777;
+    border: 1px solid #FF3030;
+    box-shadow: 0 0 15px rgba(255,48,48,0.2);
+}
+
+/* ANIMACION */
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ALERTAS */
+div[data-testid="stAlert"] {
+    background: #1B1B1B;
+    border-radius: 12px;
+    border: 1px solid #555555;
+    color: white;
+}
+
+/* TEXTO DE CONFIANZA */
+.confianza {
+    text-align: center;
+    color: #AAAAAA;
+    font-size: 15px;
+    background: #191919;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #333333;
+}
+
+/* ETIQUETAS DE LOS GESTOS */
+.gesto-detectado {
+    background: linear-gradient(135deg, #242424, #111111);
+    border: 1px solid #555555;
+    border-radius: 14px;
+    padding: 15px;
+    text-align: center;
+    font-size: 25px;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 0 15px rgba(255,255,255,0.05);
+    margin: 15px 0;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# ==========================================
+# TITULO
+# ==========================================
+
+st.markdown(
+    '<div class="main-title">PIEDRA · PAPEL · TIJERAS</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="subtitle">DESAFÍA A LA COMPUTADORA</div>',
+    unsafe_allow_html=True
+)
+
+st.divider()
+
+
+# ==========================================
+# FUNCIONES MQTT
+# ==========================================
+
+def on_publish(client, userdata, result):
+    print("el dato ha sido publicado \n")
+
+
+def on_message(client, userdata, message):
+    global message_received
+    time.sleep(2)
+    message_received = str(message.payload.decode("utf-8"))
+    st.write(message_received)
+
+
+# ==========================================
 # CONFIGURACIÓN MQTT
-# =========================================================
+# ==========================================
 
 broker = "broker.mqttdashboard.com"
 port = 1883
 
-TOPIC_JUGADA = "tripletadeo"
-TOPIC_RESULTADO = "IMIA"
+client1 = paho.Client(client_id="APP_CERR")
+client1.on_message = on_message
+client1.on_publish = on_publish
+
+client1.connect(broker, port, keepalive=60)
+
+# Iniciar comunicación MQTT
+client1.loop_start()
 
 
-def on_connect(client, userdata, flags, rc, properties=None):
-    if rc == 0:
-        print("Conexión MQTT establecida.")
-    else:
-        print(f"Error de conexión MQTT. Código: {rc}")
+# ==========================================
+# ENVIAR RESULTADO AL ESP32
+# ==========================================
 
+def enviar_resultado(resultado):
 
-def on_publish(client, userdata, mid, *args):
-    print(f"Mensaje MQTT publicado. ID: {mid}")
-
-
-@st.cache_resource
-def conectar_mqtt():
-    # Cliente compatible con las versiones habituales de Paho MQTT.
-    try:
-        cliente = paho.Client(
-            client_id="APP_GESTOS_PPT",
-            protocol=paho.MQTTv311,
-            callback_api_version=paho.CallbackAPIVersion.VERSION1
-        )
-    except (AttributeError, TypeError):
-        cliente = paho.Client(
-            client_id="APP_GESTOS_PPT",
-            protocol=paho.MQTTv311
-        )
-
-    cliente.on_connect = on_connect
-    cliente.on_publish = on_publish
-
-    cliente.connect(broker, port, keepalive=60)
-    cliente.loop_start()
-
-    inicio = time.time()
-
-    while not cliente.is_connected():
-        if time.time() - inicio > 10:
-            cliente.loop_stop()
-            raise ConnectionError("No se pudo conectar con el broker MQTT.")
-
-        time.sleep(0.1)
-
-    return cliente
-
-
-try:
-    client1 = conectar_mqtt()
-    st.success("Conexión MQTT establecida correctamente.")
-except Exception as e:
-    client1 = None
-    st.error(f"No se pudo establecer la conexión MQTT: {e}")
-
-
-# =========================================================
-# ENVÍO DE MENSAJES A MQTT / WOKWI
-# =========================================================
-
-def publicar_mqtt(topic, mensaje):
-    global client1
-
-    if client1 is None:
-        st.error("No hay conexión MQTT disponible.")
-        return False
+    mensaje = {
+        "resultado": resultado
+    }
 
     try:
-        if not client1.is_connected():
-            client1.reconnect()
 
-            inicio = time.time()
-
-            while not client1.is_connected():
-                if time.time() - inicio > 5:
-                    st.error("No fue posible reconectar con MQTT.")
-                    return False
-
-                time.sleep(0.1)
-
-        payload = json.dumps(mensaje)
-
-        resultado = client1.publish(
-            topic,
-            payload,
+        info = client1.publish(
+            "IMIA",
+            json.dumps(mensaje),
             qos=1,
             retain=False
         )
 
-        if resultado.rc != paho.MQTT_ERR_SUCCESS:
-            st.error("No se pudo publicar el mensaje MQTT.")
-            return False
+        info.wait_for_publish(timeout=5)
 
-        resultado.wait_for_publish(timeout=5)
+        if info.is_published():
 
-        if resultado.is_published():
-            print(f"Mensaje enviado | Tópico: {topic} | Datos: {payload}")
-            return True
-
-        st.warning("El mensaje fue enviado, pero no se confirmó su publicación.")
-        return False
-
-    except Exception as e:
-        st.error(f"Error al enviar mensaje MQTT: {e}")
-        return False
-
-
-def enviar_resultado_wokwi(resultado):
-    """
-    Victoria  -> Abre
-    Derrota   -> Cierra
-    Empate    -> Empate
-    """
-
-    equivalencias_resultado = {
-        "victoria": "Abre",
-        "derrota": "Cierra",
-        "empate": "Empate"
-    }
-
-    accion = equivalencias_resultado.get(resultado)
-
-    if accion is None:
-        st.error("Resultado no reconocido.")
-        return
-
-    mensaje = {
-        "gesto": accion
-    }
-
-    publicar_mqtt(TOPIC_RESULTADO, mensaje)
-
-
-# =========================================================
-# CARGAR MODELO DE TEACHABLE MACHINE
-# =========================================================
-
-@st.cache_resource
-def cargar_modelo():
-    modelo = load_model(
-        "converted_kerasPTP/keras_model.h5",
-        compile=False
-    )
-
-    with open("converted_kerasPTP/labels.txt", "r") as archivo:
-        clases_modelo = [
-            linea.strip().split(maxsplit=1)[1]
-            for linea in archivo.readlines()
-            if linea.strip() and len(linea.strip().split(maxsplit=1)) > 1
-        ]
-
-    return modelo, clases_modelo
-
-
-try:
-    model, clases = cargar_modelo()
-except Exception as e:
-    st.error(f"Error al cargar el modelo: {e}")
-    st.stop()
-
-
-# =========================================================
-# CÁMARA
-# =========================================================
-
-st.markdown("### 📸 Realiza tu jugada")
-
-imagen_camara = st.camera_input("Muestra tu mano frente a la cámara")
-
-
-# =========================================================
-# LÓGICA DEL JUEGO
-# =========================================================
-
-if imagen_camara is not None:
-
-    try:
-        imagen = Image.open(imagen_camara).convert("RGB")
-
-        # Redimensionar imagen al tamaño requerido por el modelo.
-        imagen = ImageOps.fit(
-            imagen,
-            (224, 224),
-            Image.Resampling.LANCZOS
-        )
-
-        imagen_array = np.asarray(imagen)
-
-        # Normalización de los píxeles.
-        imagen_array = (
-            imagen_array.astype(np.float32) / 127.5
-        ) - 1
-
-        imagen_array = np.expand_dims(imagen_array, axis=0)
-
-        # Predicción del modelo.
-        prediccion = model.predict(imagen_array, verbose=0)
-
-        indice = int(np.argmax(prediccion[0]))
-        confianza = float(prediccion[0][indice])
-
-        if indice >= len(clases):
-            st.error("El modelo devolvió una clase no reconocida.")
-            st.stop()
-
-        gesto = clases[indice].strip()
-
-        # Mostrar la confianza de la predicción.
-        st.write(f"**Gesto detectado:** {gesto}")
-        st.write(f"**Confianza:** {confianza * 100:.2f}%")
-
-        # Enviar la jugada detectada al tópico original.
-        publicar_mqtt(
-            TOPIC_JUGADA,
-            {"gesto": gesto}
-        )
-
-        # Elegir jugada aleatoria de la máquina.
-        maquina = random.choice(clases).strip()
-
-        # Normalizar nombres de las clases.
-        equivalencias = {
-            "tijeras": "tijera",
-            "tijera": "tijera",
-            "piedra": "piedra",
-            "papel": "papel"
-        }
-
-        jugador_normalizado = equivalencias.get(gesto.lower())
-        maquina_normalizada = equivalencias.get(maquina.lower())
-
-        # Reglas del juego.
-        reglas = {
-            "piedra": "tijera",
-            "tijera": "papel",
-            "papel": "piedra"
-        }
-
-        if jugador_normalizado is None or maquina_normalizada is None:
-            st.error(
-                "No se reconoció correctamente una de las jugadas. "
-                "Revisa los nombres de las clases en labels.txt."
-            )
-            st.stop()
-
-        st.markdown("---")
-        st.markdown("### 🎮 Resultado de la partida")
-
-        st.markdown(
-            f'<div class="jugada">🧑 Tu jugada: <b>{jugador_normalizado.upper()}</b></div>',
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f'<div class="jugada">🤖 Jugada de la máquina: <b>{maquina_normalizada.upper()}</b></div>',
-            unsafe_allow_html=True
-        )
-
-        # -------------------------------------------------
-        # EMPATE
-        # -------------------------------------------------
-
-        if jugador_normalizado == maquina_normalizada:
-
-            st.markdown(
-                """
-                <div class="resultado">
-                    <div class="empate">🤝 ¡EMPATE!</div>
-                    <p>Ambos eligieron la misma jugada.</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            # Enviar comando de empate a Wokwi.
-            enviar_resultado_wokwi("empate")
-
-        # -------------------------------------------------
-        # VICTORIA
-        # -------------------------------------------------
-
-        elif reglas.get(jugador_normalizado) == maquina_normalizada:
-
-            st.markdown(
-                """
-                <div class="resultado">
-                    <div class="victoria">🏆 ¡GANASTE!</div>
-                    <p>¡Excelente jugada!</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            # Enviar comando de victoria a Wokwi.
-            enviar_resultado_wokwi("victoria")
-
-        # -------------------------------------------------
-        # DERROTA
-        # -------------------------------------------------
+            print(f"Resultado enviado al ESP32: {resultado}")
 
         else:
 
+            print(f"No se pudo confirmar el envío: {resultado}")
+
+    except Exception as e:
+
+        print(f"Error al enviar resultado MQTT: {e}")
+
+
+# ==========================================
+# CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
+# ==========================================
+
+model = load_model('converted_kerasPTP/keras_model.h5')
+
+
+# Cargar las etiquetas del modelo
+with open('converted_kerasPTP/labels.txt', 'r') as f:
+
+    clases = [
+        linea.strip().split(maxsplit=1)[1]
+        for linea in f.readlines()
+        if linea.strip()
+    ]
+
+
+data = np.ndarray(
+    shape=(1, 224, 224, 3),
+    dtype=np.float32
+)
+
+
+st.markdown("### 📷 Reconocimiento del jugador")
+
+img_file_buffer = st.camera_input("Toma una foto para jugar")
+
+
+if img_file_buffer is not None:
+
+    data = np.ndarray(
+        shape=(1, 224, 224, 3),
+        dtype=np.float32
+    )
+
+    img = Image.open(img_file_buffer).convert("RGB")
+
+    newsize = (224, 224)
+    img = img.resize(newsize)
+
+    img_array = np.array(img)
+
+    normalized_image_array = (
+        img_array.astype(np.float32) / 127.5
+    ) - 1
+
+    data[0] = normalized_image_array
+
+    prediction = model.predict(data, verbose=0)
+
+    print(prediction)
+
+
+    # ==========================================
+    # IDENTIFICAR EL GESTO
+    # ==========================================
+
+    if len(clases) != 3:
+
+        st.error("El modelo no contiene exactamente tres clases.")
+
+    else:
+
+        indice = np.argmax(prediction[0])
+
+        confianza = prediction[0][indice]
+
+        gesto = clases[indice]
+
+
+        if confianza > 0.3:
+
+            st.markdown("### ✋ Tu jugada")
+
             st.markdown(
-                """
-                <div class="resultado">
-                    <div class="derrota">💀 ¡PERDISTE!</div>
-                    <p>La máquina ganó esta ronda.</p>
-                </div>
-                """,
+                f'<div class="gesto-detectado">{gesto.upper()}</div>',
                 unsafe_allow_html=True
             )
 
-            # Enviar comando de derrota a Wokwi.
-            enviar_resultado_wokwi("derrota")
+            st.markdown(
+                f'<div class="confianza">Confianza del reconocimiento: {confianza * 100:.2f}%</div>',
+                unsafe_allow_html=True
+            )
 
-            mostrar_consejo_aleatorio()
 
-    except Exception as e:
-        st.error(f"Ocurrió un error al procesar la jugada: {e}")
+            # ==========================================
+            # ENVIAR GESTO DEL JUGADOR POR MQTT
+            # ==========================================
+
+            mensaje = {
+                "gesto": gesto
+            }
+
+            client1.publish(
+                "tripletadeo",
+                json.dumps(mensaje),
+                qos=0,
+                retain=False
+            )
+
+            time.sleep(0.2)
+
+
+            # ==========================================
+            # ELECCIÓN ALEATORIA DE LA COMPUTADORA
+            # ==========================================
+
+            maquina = random.choice(clases)
+
+            st.markdown("### 🤖 Jugada de la computadora")
+
+            st.markdown(
+                f'<div class="gesto-detectado">{maquina.upper()}</div>',
+                unsafe_allow_html=True
+            )
+
+
+            # ==========================================
+            # NORMALIZAR LOS NOMBRES DE LOS GESTOS
+            # ==========================================
+
+            jugador_normalizado = gesto.strip().lower()
+            maquina_normalizada = maquina.strip().lower()
+
+            equivalencias = {
+                "tijeras": "tijera",
+                "tijera": "tijera",
+                "piedra": "piedra",
+                "papel": "papel"
+            }
+
+            jugador_normalizado = equivalencias.get(
+                jugador_normalizado, jugador_normalizado
+            )
+
+            maquina_normalizada = equivalencias.get(
+                maquina_normalizada, maquina_normalizada
+            )
+
+
+            # ==========================================
+            # REGLAS DEL JUEGO
+            # ==========================================
+
+            reglas = {
+                "piedra": "tijera",
+                "tijera": "papel",
+                "papel": "piedra"
+            }
+
+
+            # ==========================================
+            # DETERMINAR GANADOR
+            # ==========================================
+
+            st.divider()
+
+            st.markdown("### 🏆 Resultado de la ronda")
+
+
+            if jugador_normalizado not in reglas or maquina_normalizada not in reglas:
+
+                st.markdown(
+                    '<div class="resultado resultado-error">No se reconocieron correctamente los nombres de los gestos. Revisa el archivo labels.txt.</div>',
+                    unsafe_allow_html=True
+                )
+
+
+            elif jugador_normalizado == maquina_normalizada:
+
+                st.markdown(
+                    '<div class="resultado resultado-draw">🤝 ¡EMPATE! Ambos eligieron el mismo gesto.</div>',
+                    unsafe_allow_html=True
+                )
+
+                # ENVIAR EMPATE AL ESP32
+                enviar_resultado("Empate")
+
+
+            elif reglas[jugador_normalizado] == maquina_normalizada:
+
+                st.markdown(
+                    f'<div class="resultado resultado-win">🏆 ¡GANASTE! Tu {gesto} vence a {maquina}.</div>',
+                    unsafe_allow_html=True
+                )
+
+                # ENVIAR VICTORIA AL ESP32
+                enviar_resultado("Gana")
+
+
+            else:
+
+                st.markdown(
+                    f'<div class="resultado resultado-lose">😢 ¡PERDISTE! La {maquina} de la computadora vence a tu {gesto}.</div>',
+                    unsafe_allow_html=True
+                )
+
+                # ENVIAR DERROTA AL ESP32
+                enviar_resultado("Pierde")
+
+                mostrar_consejo_aleatorio()
+
+
+        else:
+
+            st.warning(
+                "No se pudo reconocer el gesto. Intenta nuevamente."
+            )
 
