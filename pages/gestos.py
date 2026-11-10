@@ -276,14 +276,24 @@ def on_message(client, userdata, message):
 broker = "broker.mqttdashboard.com"
 port = 1883
 
-client1 = paho.Client(client_id="APP_CERR")
-client1.on_message = on_message
-client1.on_publish = on_publish
 
-client1.connect(broker, port, keepalive=60)
+@st.cache_resource
+def conectar_mqtt_gestos():
 
-# Iniciar comunicación MQTT
-client1.loop_start()
+    cliente = paho.Client(client_id="APP_CERR_GESTOS")
+
+    cliente.on_message = on_message
+    cliente.on_publish = on_publish
+
+    cliente.connect(broker, port, keepalive=60)
+
+    # Iniciar comunicación MQTT
+    cliente.loop_start()
+
+    return cliente
+
+
+client1 = conectar_mqtt_gestos()
 
 
 # ==========================================
@@ -298,6 +308,27 @@ def enviar_resultado(resultado):
 
     try:
 
+        # Comprobar si el cliente sigue conectado
+        if not client1.is_connected():
+
+            print("Conexión MQTT perdida. Intentando reconectar...")
+
+            client1.reconnect()
+
+            tiempo_inicio = time.time()
+
+            while not client1.is_connected():
+
+                if time.time() - tiempo_inicio > 5:
+
+                    print("No se pudo reconectar con MQTT.")
+
+                    return
+
+                time.sleep(0.1)
+
+
+        # Publicar resultado en el tópico que escucha el ESP32
         info = client1.publish(
             "IMIA",
             json.dumps(mensaje),
@@ -305,15 +336,21 @@ def enviar_resultado(resultado):
             retain=False
         )
 
-        info.wait_for_publish(timeout=5)
+        if info.rc == paho.MQTT_ERR_SUCCESS:
 
-        if info.is_published():
+            info.wait_for_publish(timeout=5)
 
-            print(f"Resultado enviado al ESP32: {resultado}")
+            if info.is_published():
+
+                print(f"Resultado enviado al ESP32: {resultado}")
+
+            else:
+
+                print(f"No se confirmó el envío: {resultado}")
 
         else:
 
-            print(f"No se pudo confirmar el envío: {resultado}")
+            print("Error al publicar el mensaje MQTT.")
 
     except Exception as e:
 
