@@ -324,11 +324,11 @@ def enviar_resultado(resultado):
 # CARGAR MODELO DE PIEDRA, PAPEL Y TIJERA
 # ==========================================
 
-model = load_model('converted_kerasPTP/keras_model.h5')
+model = load_model('converted_kerasPTPF/keras_model.h5')
 
 
 # Cargar las etiquetas del modelo
-with open('converted_kerasPTP/labels.txt', 'r') as f:
+with open('converted_kerasPTPF/labels.txt', 'r') as f:
 
     clases = [
         linea.strip().split(maxsplit=1)[1]
